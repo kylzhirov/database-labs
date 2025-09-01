@@ -1,0 +1,64 @@
+university=# DROP TABLE IF EXISTS students;
+NOTICE:  table "students" does not exist, skipping
+DROP TABLE
+university=# 
+university=# CREATE TABLE students (
+university(#     student_id SERIAL PRIMARY KEY,
+university(#     first_name VARCHAR(50) NOT NULL,
+university(#     last_name VARCHAR(50) NOT NULL,
+university(#     email VARCHAR(100) UNIQUE NOT NULL,
+university(#     faculty VARCHAR(100)
+university(# );
+CREATE TABLE
+university=# 
+
+ALTER TABLE students
+ADD COLUMN date_of_birth DATE;
+SELECT * FROM students
+
+university=# SELECT * FROM students
+university-# ;
+ student_id | first_name | last_name | email | faculty | date_of_birth 
+------------+------------+-----------+-------+---------+---------------
+(0 rows)
+
+
+ALTER TABLE students
+ALTER COLUMN first_name TYPE TEXT;
+
+ALTER TABLE
+
+Query returned successfully in 101 msec.
+
+ALTER TABLE students
+ADD CONSTRAINT unique_student_email UNIQUE (email);
+
+INSERT INTO students (first_name, last_name, email)
+VALUES ('James', 'Brown', 'alkdjf333@example.com'),
+       ('Michael', 'Johnson', 'alkdjf333@example.com');
+
+ERROR:  duplicate key value violates unique constraint "students_email_key"
+Key (email)=(alkdjf333@example.com) already exists. 
+
+SQL state: 23505
+Detail: Key (email)=(alkdjf333@example.com) already exists.
+
+
+ALTER TABLE students
+RENAME COLUMN email TO email_address;
+
+ALTER TABLE students
+RENAME TO university_students;
+
+SELECT * FROM university_students;
+
+university=# SELECT * FROM university_students;
+ student_id | first_name | last_name | email_address | faculty | date_of_birth 
+------------+------------+-----------+---------------+---------+---------------
+(0 rows)
+
+university=# CREATE TEMP TABLE temp_table_name (
+university(#     column1 INT,
+university(#     column2 TEXT
+university(# );
+CREATE TABLE

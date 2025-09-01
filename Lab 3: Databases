@@ -1,0 +1,31 @@
+postgres=# CREATE DATABASE university;
+CREATE DATABASE
+postgres=# \l
+                                                      List of databases
+    Name    |  Owner   | Encoding | Locale Provider |   Collate   |    Ctype    | Locale | ICU Rules |   Access privileges   
+------------+----------+----------+-----------------+-------------+-------------+--------+-----------+-----------------------
+ postgres   | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | 
+ template0  | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | =c/postgres          +
+            |          |          |                 |             |             |        |           | postgres=CTc/postgres
+ template1  | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | =c/postgres          +
+            |          |          |                 |             |             |        |           | postgres=CTc/postgres
+ university | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | 
+(4 rows)
+
+postgres=# DROP DATABASE university;
+DROP DATABASE
+postgres=# \l
+                                                     List of databases
+   Name    |  Owner   | Encoding | Locale Provider |   Collate   |    Ctype    | Locale | ICU Rules |   Access privileges   
+-----------+----------+----------+-----------------+-------------+-------------+--------+-----------+-----------------------
+ postgres  | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | 
+ template0 | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | =c/postgres          +
+           |          |          |                 |             |             |        |           | postgres=CTc/postgres
+ template1 | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | =c/postgres          +
+           |          |          |                 |             |             |        |           | postgres=CTc/postgres
+(3 rows)
+
+postgres=# CREATE DATABASE university;;
+CREATE DATABASE
+postgres=# \c university 
+You are now connected to database "university" as user "postgres"

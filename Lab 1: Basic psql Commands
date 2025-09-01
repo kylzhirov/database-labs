@@ -1,0 +1,28 @@
+-- create data
+CREATE TABLE students (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    age INT
+);
+
+-- insert data
+INSERT INTO students (name, age) VALUES ('Alice', 21), ('Bob', 23);
+
+-- select data
+
+SELECT * FROM students;
+
+-- delete table
+DROP TABLE students;
+
+
+user@ubuntu# psql -U postgres -d postgres -f lab1.sql 
+CREATE TABLE
+INSERT 0 2
+ id | name  | age 
+----+-------+-----
+  1 | Alice |  21
+  2 | Bob   |  23
+(2 rows)
+
+DROP TABLE
