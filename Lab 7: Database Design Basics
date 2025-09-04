@@ -1,0 +1,166 @@
+-- Violating 1NF form, multiple phone numbers
+CREATE TABLE students_bad (
+    student_id INT PRIMARY KEY,
+    name VARCHAR(100),
+    phone_numbers TEXT -- "123-456-7890, 098-765-4321"
+);
+
+-- Following 1NF:
+CREATE TABLE students (
+    student_id INT PRIMARY KEY,
+    name VARCHAR(100)
+);
+
+CREATE TABLE student_phones (
+    student_id INT,
+    phone_number VARCHAR(15),
+    phone_type VARCHAR(20), -- 'mobile', 'home'
+    PRIMARY KEY (student_id, phone_number),
+    FOREIGN KEY (student_id) REFERENCES students(student_id)
+);
+
+postgres=# INSERT INTO students (student_id, name) VALUES
+postgres-#  ('48232', 'Alice');
+INSERT 0 1
+postgres=# INSERT INTO student_phones (student_id, phone_number, phone_type) VALUES
+  (48232, '888 322 585 333', 'mobile');
+INSERT 0 1
+postgres=# SELECT * FROM student_phones
+;
+ student_id |  phone_number   | phone_type 
+------------+-----------------+------------
+      48232 | 888 322 585 333 | mobile
+      48232 | 362 574 161 545 | home
+(2 rows)
+
+
+DROP TABLE IF EXISTS courses;
+DROP TABLE IF EXISTS enrollments;
+
+CREATE TABLE enrollments_bad (
+  student_id INT,
+  course_id INT,
+  course_name VARCHAR(100), -- PArtial dependency
+  PRIMARY KEY (student_id, course_id)
+);
+
+
+-- GOOD: Separate tables
+CREATE TABLE courses (
+  course_id INT PRIMARY KEY,
+  course_name VARCHAR(100),
+  credits INT
+);
+
+CREATE TABLE enrollments (
+  student_id INT,
+  course_id INT,
+  grade CHAR(2),
+  PRIMARY KEY (student_id, course_id),
+  FOREIGN KEY (student_id) REFERENCES students(student_id),
+  FOREIGN KEY (course_id) REFERENCES courses(course_id)
+);
+
+DROP TABLE IF EXISTS departments;
+DROP TABLE IF EXISTS students;
+-- 3NF
+-- GOOD: Separate department information
+CREATE TABLE departments (
+  department_id INT PRIMARY KEY,
+  department_name VARCHAR(100),
+  department_head VARCHAR(100)
+);
+
+CREATE TABLE students (
+  student_id INT PRIMARY KEY,
+  name VARCHAR(100),
+  department_id INT,
+  FOREIGN KEY (department_id) REFERENCES departments(department_id)
+);
+
+postgres=# INSERT INTO departments (department_id, department_name, department_head) VALUES
+(1, 'Engineering', 'Viktor Korneplod');
+INSERT 0 1
+postgres=# INSERT INTO students (student_id, name, department_id) VALUES
+postgres-# (84321, 'Timofey Bozhenov', 1);
+INSERT 0 1
+postgres=# SELECT * FROM students;
+ student_id |       name       | department_id 
+------------+------------------+---------------
+      84321 | Timofey Bozhenov |             1
+(1 row)
+
+postgres=# SELECT * FROM departments ;
+ department_id | department_name | department_head  
+---------------+-----------------+------------------
+             1 | Engineering     | Viktor Korneplod
+(1 row)
+
+
+CREATE TABLE authors (
+  author_id SERIAL PRIMARY KEY,
+  first_name VARCHAR(50) NOT NULL,
+  last_name VARCHAR(50) NOT NULL,
+  birth_date DATE
+);
+
+CREATE TABLE books (
+  book_id SERIAL PRIMARY KEY,
+  title VARCHAR(200) NOT NULL,
+  isbn VARCHAR(13) UNIQUE,
+  publication_year INTEGER,
+  available_copies INTEGER DEFAULT 1
+);
+
+CREATE TABLE book_authors (
+  book_id INTEGER,
+  author_id INTEGER,
+  PRIMARY KEY (book_id, author_id),
+  FOREIGN KEY (book_id) REFERENCES books(book_id),
+  FOREIGN KEY (author_id) REFERENCES authors(author_id)
+);
+
+CREATE TABLE members (
+  member_id SERIAL PRIMARY KEY,
+  first_name VARCHAR(50) NOT NULL,
+  last_name VARCHAR(50) NOT NULL,
+  email VARCHAR(100) UNIQUE NOT NULL,
+  phone VARCHAR(15),
+  membership_date DATE DEFAULT CURRENT_DATE
+);
+
+CREATE TABLE loans (
+  loan_id SERIAL PRIMARY KEY,
+  member_id INTEGER NOT NULL,
+  book_id INTEGER NOT NULL,
+  loan_date DATE DEFAULT CURRENT_DATE,
+  due_date DATE NOT NULL,
+  return_date DATE,
+  late_fee DECIMAL(10,2) DEFAULT 0.00,
+  FOREIGN KEY (member_id) REFERENCES members(member_id),
+  FOREIGN KEY (book_id) REFERENCES books(book_id)
+);
+
+psql -U postgres -f lab7.sql
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+CREATE TABLE
+
+postgres=# \d loans
+                                    Table "public.loans"
+   Column    |     Type      | Collation | Nullable |                Default                 
+-------------+---------------+-----------+----------+----------------------------------------
+ loan_id     | integer       |           | not null | nextval('loans_loan_id_seq'::regclass)
+ member_id   | integer       |           | not null | 
+ book_id     | integer       |           | not null | 
+ loan_date   | date          |           |          | CURRENT_DATE
+ due_date    | date          |           | not null | 
+ return_date | date          |           |          | 
+ late_fee    | numeric(10,2) |           |          | 0.00
+Indexes:
+    "loans_pkey" PRIMARY KEY, btree (loan_id)
+Foreign-key constraints:
+    "loans_book_id_fkey" FOREIGN KEY (book_id) REFERENCES books(book_id)
+    "loans_member_id_fkey" FOREIGN KEY (member_id) REFERENCES members(member_id)
