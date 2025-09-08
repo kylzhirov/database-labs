@@ -1,0 +1,60 @@
+postgres=# \dt
+              List of relations
+ Schema |      Name       | Type  |  Owner   
+--------+-----------------+-------+----------
+ public | authors         | table | postgres
+ public | blog_posts      | table | postgres
+ public | book_authors    | table | postgres
+ public | books           | table | postgres
+ public | comments        | table | postgres
+ public | courses         | table | postgres
+ public | departments     | table | postgres
+ public | enrollments_bad | table | postgres
+ public | loans           | table | postgres
+ public | members         | table | postgres
+ public | students        | table | postgres
+ public | students_bad    | table | postgres
+ public | user_profiles   | table | postgres
+ public | users           | table | postgres
+(14 rows)
+
+postgres=# \d
+                      List of relations
+ Schema |             Name             |   Type   |  Owner   
+--------+------------------------------+----------+----------
+ public | authors                      | table    | postgres
+ public | authors_author_id_seq        | sequence | postgres
+ public | blog_posts                   | table    | postgres
+ public | blog_posts_post_id_seq       | sequence | postgres
+ public | book_authors                 | table    | postgres
+ public | books                        | table    | postgres
+ public | books_book_id_seq            | sequence | postgres
+ public | comments                     | table    | postgres
+ public | comments_comment_id_seq      | sequence | postgres
+ public | courses                      | table    | postgres
+ public | departments                  | table    | postgres
+ public | enrollments_bad              | table    | postgres
+ public | loans                        | table    | postgres
+ public | loans_loan_id_seq            | sequence | postgres
+ public | members                      | table    | postgres
+ public | members_member_id_seq        | sequence | postgres
+ public | students                     | table    | postgres
+ public | students_bad                 | table    | postgres
+ public | user_profiles                | table    | postgres
+ public | user_profiles_profile_id_seq | sequence | postgres
+ public | users                        | table    | postgres
+ public | users_user_id_seq            | sequence | postgres
+(22 rows)
+
+postgres=# \d authors
+                                         Table "public.authors"
+   Column   |         Type          | Collation | Nullable |                  Default                   
+------------+-----------------------+-----------+----------+--------------------------------------------
+ author_id  | integer               |           | not null | nextval('authors_author_id_seq'::regclass)
+ first_name | character varying(50) |           | not null | 
+ last_name  | character varying(50) |           | not null | 
+ birth_date | date                  |           |          | 
+Indexes:
+    "authors_pkey" PRIMARY KEY, btree (author_id)
+Referenced by:
+    TABLE "book_authors" CONSTRAINT "book_authors_author_id_fkey" FOREIGN KEY (author_id) REFERENCES authors(author_id)

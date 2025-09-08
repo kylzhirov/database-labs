@@ -1,0 +1,213 @@
+postgres=# SELECT * FROM employees;
+ emp_id | first_name | last_name | dept_id 
+--------+------------+-----------+---------
+(0 rows)
+postgres=# SELECT first_name, dept_id FROM employees;
+ first_name | dept_id 
+------------+---------
+ John       |      1
+ Jane       |      2
+ Alice      |      3
+ Bob        |      1
+(4 rows)
+
+postgres=# ALTER TABLE employees ADD COLUMN salary NUMERIC(10, 2);
+ALTER TABLE
+
+postgres=# UPDATE employees
+SET salary = 75000.00
+WHERE emp_id = 1;
+
+UPDATE employees
+SET salary = 85000.00
+WHERE emp_id = 2;
+
+UPDATE employees
+SET salary = 95000.00
+WHERE emp_id = 3;
+
+UPDATE employees
+SET salary = 70000.00
+WHERE emp_id = 4;
+UPDATE 1
+UPDATE 1
+UPDATE 1
+UPDATE 1
+
+postgres=# SELECT first_name, salary, salary * 0.10 AS potential_bonus
+FROM employees;
+ first_name |  salary  | potential_bonus 
+------------+----------+-----------------
+ John       | 75000.00 |       7500.0000
+ Jane       | 85000.00 |       8500.0000
+ Alice      | 95000.00 |       9500.0000
+ Bob        | 70000.00 |       7000.0000
+(4 rows)
+
+postgres=# SELECT first_name, salary
+FROM employees
+WHERE dept_id = '10';
+ first_name |  salary  
+------------+----------
+ John       | 75000.00
+ Bob        | 70000.00
+(2 rows)
+
+WHERE salary > 70000 AND dept_id = '10';
+ first_name |  salary  
+------------+----------
+ John       | 75000.00
+(1 row)
+
+postgres=# CREATE TABLE products (
+    product_id SERIAL PRIMARY KEY,
+    product_name TEXT NOT NULL,
+    price NUMERIC(10, 2) NOT NULL      
+);
+CREATE TABLE
+
+postgres=# INSERT INTO products (product_name, price) VALUES
+('Smartphone', 699.99),
+('Headphones', 89.50),
+('Laptop Bag', 45.00);
+INSERT 0 3
+
+postgres=# SELECT product_name, price
+FROM products
+WHERE price BETWEEN 20 AND 50;
+ product_name | price 
+--------------+-------
+ Laptop Bag   | 45.00
+(1 row)
+
+postgres=# CREATE TABLE customers (
+postgres(# customer_id SERIAL PRIMARY KEY,
+postgres(# customer_name TEXT NOT NULL
+postgres(# );
+CREATE TABLE
+
+INSERT INTO customers (customer_name)
+VALUES
+('Alice Johnson'),
+('Bob Smith'),
+('Charlie Brown'),
+('David Wilson'),
+('Eva Lee');
+
+postgres=# SELECT customer_name
+FROM customers
+WHERE customer_name LIKE 'Da%';
+ customer_name 
+---------------
+ David Wilson
+(1 row)
+
+postgres=# SELECT product_name
+FROM products
+WHERE product_name LIKE '%phone';
+ product_name 
+--------------
+ Smartphone
+(1 row)
+
+postgres=# SELECT email
+FROM users
+WHERE email ILIKE '%@example.com';
+      email       
+------------------
+ john@example.com
+(1 row)
+
+postgres=# SELECT first_name
+FROM employees
+WHERE first_name ~ '^[AB]';
+ first_name 
+------------
+ Alice
+ Bob
+(2 rows)
+
+postgres=# SELECT email
+FROM users
+WHERE email ~* '^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$';
+      email       
+------------------
+ john@example.com
+(1 row)
+
+
+postgres=# SELECT first_name, dept_id
+FROM employees
+WHERE dept_id IN (1, 2);
+ first_name | dept_id 
+------------+---------
+ John       |      1
+ Jane       |      2
+ Bob        |      1
+(3 rows)
+
+postgres=# CREATE TABLE sales (
+    sale_id SERIAL PRIMARY KEY,
+    employee_id INTEGER NOT NULL REFERENCES employees(emp_id),
+    customer_id INTEGER NOT NULL REFERENCES customers(customer_id),
+    amount NUMERIC(10, 2) NOT NULL CHECK (amount > 0) 
+);
+
+postgres=# INSERT INTO sales (employee_id, customer_id, amount)
+VALUES
+(1, 1, 123.50),
+(2, 2, 6343.75),
+(3, 3, 100.00),
+(4, 4, 90.00),                                    
+(1, 5, 1100.25);
+INSERT 0 5
+
+postgres=# SELECT first_name                                   
+FROM employees e
+WHERE EXISTS (
+SELECT 1
+FROM sales s
+WHERE s.employee_id = e.emp_id AND s.amount > 1000
+);
+ first_name 
+------------
+ John
+ Jane
+(2 rows)
+
+postgres=# SELECT first_name, last_name, salary,
+CASE
+    WHEN salary > 100000 THEN 'Senior'
+    WHEN salary BETWEEN 60000 AND 100000 THEN 'Mid-Level'
+    ELSE 'Junior'
+END AS employee_level
+FROM employees;
+ first_name | last_name |  salary  | employee_level 
+------------+-----------+----------+----------------
+ John       | Doe       | 75000.00 | Mid-Level
+ Jane       | Smith     | 85000.00 | Mid-Level
+ Alice      | Johnson   | 95000.00 | Mid-Level
+ Bob        | Brown     | 70000.00 | Mid-Level
+(4 rows)
+
+postgres=# WITH department_averages AS (
+SELECT
+department,
+AVG(salary) AS avg_salary
+FROM employees
+GROUP BY department
+)
+SELECT
+e.name,
+e.salary,
+e.department,
+da.avg_salary
+FROM employees e
+JOIN department_averages da ON e.department = da.department
+WHERE e.salary > da.avg_salary;
+ name  |  salary  | department |     avg_salary     
+-------+----------+------------+--------------------
+ Bob   | 75000.00 | Sales      | 67500.000000000000
+ David | 80000.00 | IT         | 67500.000000000000
+ Eve   | 62000.00 | HR         | 60000.000000000000
+(3 rows)
