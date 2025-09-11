@@ -1,0 +1,229 @@
+-- Customers table
+CREATE TABLE customers (
+    customer_id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100)
+);
+
+-- Orders table
+CREATE TABLE orders (
+    order_id SERIAL PRIMARY KEY,
+    customer_id INTEGER REFERENCES customers(customer_id),
+    order_date DATE,
+    total_amount DECIMAL(10,2)
+);
+
+postgres=# INSERT INTO customers (name, email) VALUES
+('John Doe', 'john.doe@example.com'),
+('Jane Smith', 'jane.smith@example.com'),
+('Alice Johnson', 'alice.johnson@example.com'),
+('Bob Wilson', 'bob.wilson@example.com'),
+('Emma Davis', 'emma.davis@example.com');
+INSERT 0 5
+postgres=# INSERT INTO orders (customer_id, order_date, total_amount) VALUES
+(1, '2025-09-01', 150.75),
+(1, '2025-09-05', 89.99),
+(2, '2025-08-15', 245.50),
+(3, '2025-09-10', 49.99),
+(4, '2025-07-20', 199.00),
+(4, '2025-09-11', 75.25),
+(5, '2025-09-02', 300.00);
+INSERT 0 7
+postgres=# DELETE FROM orders
+postgres-# WHERE customer_id = 1;
+DELETE 2
+postgres=# DELETE FROM orders
+WHERE customer_id = 4;
+DELETE 2
+postgres=# SELECT c.name, c.email, o.order_date, o.total_amount
+FROM customers c
+INNER JOIN orders o ON c.customer_id = o.customer_id;
+     name      |           email           | order_date | total_amount 
+---------------+---------------------------+------------+--------------
+ Jane Smith    | jane.smith@example.com    | 2025-08-15 |       245.50
+ Alice Johnson | alice.johnson@example.com | 2025-09-10 |        49.99
+ Emma Davis    | emma.davis@example.com    | 2025-09-02 |       300.00
+(3 rows)
+
+postgres=# SELECT c.name, c.email, o.order_date, o.total_amount
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id;
+     name      |           email           | order_date | total_amount 
+---------------+---------------------------+------------+--------------
+ Jane Smith    | jane.smith@example.com    | 2025-08-15 |       245.50
+ Alice Johnson | alice.johnson@example.com | 2025-09-10 |        49.99
+ Emma Davis    | emma.davis@example.com    | 2025-09-02 |       300.00
+ Bob Wilson    | bob.wilson@example.com    |            |             
+ John Doe      | john.doe@example.com      |            |             
+(5 rows)
+
+
+postgres=# INSERT INTO orders (order_date, total_amount) VALUES
+('2025-08-03', 232.22),
+('2025-06-06', 75.43);
+INSERT 0 2
+postgres=# SELECT c.name, c.email, o.order_date, o.total_amount
+FROM customers c
+RIGHT JOIN orders o ON c.customer_id = o.customer_id;
+     name      |           email           | order_date | total_amount 
+---------------+---------------------------+------------+--------------
+ Jane Smith    | jane.smith@example.com    | 2025-08-15 |       245.50
+ Alice Johnson | alice.johnson@example.com | 2025-09-10 |        49.99
+ Emma Davis    | emma.davis@example.com    | 2025-09-02 |       300.00
+               |                           | 2025-08-03 |       232.22
+               |                           | 2025-06-06 |        75.43
+(5 rows)
+
+postgres=# SELECT c.name, c.email, o.order_date, o.total_amount
+FROM customers c
+FULL OUTER JOIN orders o ON c.customer_id = o.customer_id;
+     name      |           email           | order_date | total_amount 
+---------------+---------------------------+------------+--------------
+ Jane Smith    | jane.smith@example.com    | 2025-08-15 |       245.50
+ Alice Johnson | alice.johnson@example.com | 2025-09-10 |        49.99
+ Emma Davis    | emma.davis@example.com    | 2025-09-02 |       300.00
+               |                           | 2025-08-03 |       232.22
+               |                           | 2025-06-06 |        75.43
+ Bob Wilson    | bob.wilson@example.com    |            |             
+ John Doe      | john.doe@example.com      |            |             
+(7 rows)
+
+
+postgres=# SELECT c.name, c.email, o.order_date, o.total_amount
+FROM customers c
+CROSS JOIN orders o;
+     name      |           email           | order_date | total_amount 
+---------------+---------------------------+------------+--------------
+ John Doe      | john.doe@example.com      | 2025-08-15 |       245.50
+ Jane Smith    | jane.smith@example.com    | 2025-08-15 |       245.50
+ Alice Johnson | alice.johnson@example.com | 2025-08-15 |       245.50
+ Bob Wilson    | bob.wilson@example.com    | 2025-08-15 |       245.50
+ Emma Davis    | emma.davis@example.com    | 2025-08-15 |       245.50
+ John Doe      | john.doe@example.com      | 2025-09-10 |        49.99
+ Jane Smith    | jane.smith@example.com    | 2025-09-10 |        49.99
+ Alice Johnson | alice.johnson@example.com | 2025-09-10 |        49.99
+ Bob Wilson    | bob.wilson@example.com    | 2025-09-10 |        49.99
+ Emma Davis    | emma.davis@example.com    | 2025-09-10 |        49.99
+ John Doe      | john.doe@example.com      | 2025-09-02 |       300.00
+ Jane Smith    | jane.smith@example.com    | 2025-09-02 |       300.00
+ Alice Johnson | alice.johnson@example.com | 2025-09-02 |       300.00
+ Bob Wilson    | bob.wilson@example.com    | 2025-09-02 |       300.00
+ Emma Davis    | emma.davis@example.com    | 2025-09-02 |       300.00
+ John Doe      | john.doe@example.com      | 2025-08-03 |       232.22
+ Jane Smith    | jane.smith@example.com    | 2025-08-03 |       232.22
+ Alice Johnson | alice.johnson@example.com | 2025-08-03 |       232.22
+ Bob Wilson    | bob.wilson@example.com    | 2025-08-03 |       232.22
+ Emma Davis    | emma.davis@example.com    | 2025-08-03 |       232.22
+ John Doe      | john.doe@example.com      | 2025-06-06 |        75.43
+ Jane Smith    | jane.smith@example.com    | 2025-06-06 |        75.43
+ Alice Johnson | alice.johnson@example.com | 2025-06-06 |        75.43
+ Bob Wilson    | bob.wilson@example.com    | 2025-06-06 |        75.43
+ Emma Davis    | emma.davis@example.com    | 2025-06-06 |        75.43
+(25 rows)
+
+
+postgres=# SELECT c.name, o.order_date, oi.quantity, p.product_name, p.price
+FROM customers c
+INNER JOIN orders o ON c.customer_id = o.customer_id
+INNER JOIN order_items oi ON o.order_id = oi.order_id
+INNER JOIN products p ON oi.product_id = p.product_id;
+     name      | order_date | quantity | product_name | price  
+---------------+------------+----------+--------------+--------
+ Jane Smith    | 2025-08-15 |        4 | Laptop Bag   |  45.00
+ Alice Johnson | 2025-09-10 |        1 | Smartphone   | 699.99
+(2 rows)
+
+postgres=# -- Find employees and their managers
+SELECT e1.name AS employee, e2.name AS manager
+FROM employees e1
+LEFT JOIN employees e2 ON e1.manager_id = e2.id;
+ employee | manager 
+----------+---------
+ Frank    | 
+ Bob      | 
+ David    | 
+ Eve      | 
+ Alice    | David
+ Charlie  | David
+(6 rows)
+
+postgres=# SELECT c.name, o.order_date, o.total_amount
+FROM customers c
+INNER JOIN orders o ON c.customer_id = o.customer_id
+WHERE o.order_date >= '2024-01-01'
+AND o.total_amount > 100;
+    name    | order_date | total_amount 
+------------+------------+--------------
+ Jane Smith | 2025-08-15 |       245.50
+ Emma Davis | 2025-09-02 |       300.00
+(2 rows)
+
+postgres=# INSERT INTO user_profiles (user_id, first_name, last_name, phone) VALUES
+(1, 'John', 'Doe', '+1 898 123 321');
+INSERT 0 1
+postgres=# -- Joining user profiles (one-to-one)
+SELECT u.username, up.first_name, up.last_name, up.phone
+FROM users u
+LEFT JOIN user_profiles up ON u.user_id = up.user_id;
+ username | first_name | last_name |     phone      
+----------+------------+-----------+----------------
+ johndoe  | John       | Doe       | +1 898 123 321
+(1 row)
+
+postgres=# 
+
+postgres=# -- Authors and their books (one-to-many)
+SELECT a.first_name, b.title, b.publication_year
+FROM authors a
+INNER JOIN books b ON a.author_id = b.author_id
+ORDER BY a.first_name, b.publication_year;
+ first_name | title  | publication_year 
+------------+--------+------------------
+ John       | TOE II |             2021
+(1 row)
+
+
+postgres=# -- Students and their enrolled courses (many-to-many)
+SELECT s.first_name, c.course_name, e.enrollment_date, e.grade
+FROM students s
+INNER JOIN enrollments e ON s.student_id = e.student_id
+INNER JOIN courses c ON e.course_id = c.course_id
+WHERE e.grade IS NOT NULL
+ORDER BY s.first_name, c.course_name;
+ first_name |               course_name               | enrollment_date | grade 
+------------+-----------------------------------------+-----------------+-------
+ Marat      | Introduction to Artificial Intelligence | 2025-09-01      | 85.50
+ Nikita     | FYS                                     | 2025-09-05      | 69.60
+(2 rows)
+
+postgres=# SELECT c.name, o.order_date
+FROM customers c
+INNER JOIN orders o ON c.customer_id = o.customer_id;
+     name      | order_date 
+---------------+------------
+ Jane Smith    | 2025-08-15
+ Alice Johnson | 2025-09-10
+ Emma Davis    | 2025-09-02
+(3 rows)
+
+-- Find customers without orders
+SELECT c.name
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+WHERE o.customer_id IS NULL;
+    name    
+------------
+ John Doe
+ Bob Wilson
+(2 rows)
+
+-- Find customers without orders
+SELECT c.name
+FROM customers c
+LEFT JOIN orders o ON c.customer_id = o.customer_id
+WHERE o.customer_id IS NULL;
+    name    
+------------
+ John Doe
+ Bob Wilson
+(2 rows)
