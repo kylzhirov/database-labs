@@ -1,0 +1,239 @@
+postgres=# INSERT INTO employees (first_name, last_name, salary) VALUES (
+'Charlie', 'Kirk', 3000000);
+INSERT 0 1
+postgres=# INSERT INTO employees (first_name, last_name, salary) VALUES (
+'Bakyt', 'Mamatov', 60000);
+INSERT 0 1
+postgres=# SELECT first_name, last_name, salary
+postgres-# FROM employees
+postgres-# WHERE salary > (
+postgres(#     SELECT AVG(salary)  -- This scalar subquery returns a single value
+postgres(#     FROM employees
+postgres(# );
+ first_name | last_name |   salary   
+------------+-----------+------------
+ Charlie    | Kirk      | 3000000.00
+(1 row)
+postgres=# WITH regional_sales AS (
+    SELECT region_id, SUM(amount) AS total_sales
+    FROM orders
+    GROUP BY region_id
+)
+SELECT region_id, total_sales
+FROM regional_sales
+WHERE total_sales > 1000000;
+ region_id | total_sales 
+-----------+-------------
+         2 | 99999999.00
+         1 |  3841834.00
+(2 rows)
+postgres=# UPDATE employees SET manager_id=2 WHERE employee_id=3
+postgres-# ;
+UPDATE 1
+postgres=# UPDATE employees SET manager_id=1 WHERE employee_id=1
+;
+UPDATE 1
+postgres=# WITH RECURSIVE org_chart AS (
+postgres(#     -- Anchor: Find the top-level manager (e.g., who has no manager)
+postgres(#     SELECT employee_id, first_name, last_name, manager_id
+postgres(#     FROM employees
+postgres(#     WHERE manager_id IS NULL
+postgres(#     UNION ALL
+postgres(#     -- Recursive: Find everyone who reports to the people already in the chart
+postgres(#     SELECT e.employee_id, e.first_name, e.last_name, e.manager_id
+postgres(#     FROM employees e
+postgres(#     INNER JOIN org_chart oc ON e.manager_id = oc.employee_id
+postgres(# )
+postgres-# SELECT * FROM org_chart;
+ employee_id | first_name | last_name | manager_id 
+-------------+------------+-----------+------------
+           2 | Charlie    | Kirk      |           
+           3 | Bakyt      | Mamatov   |          2
+(2 rows)
+
+postgres=# INSERT INTO warehouse_1 (product_id, product_name, quantity)
+postgres-# VALUES
+postgres-# (3, 'Keyboard', 5),
+postgres-# (4, 'Monitor', 3),
+postgres-# (5, 'Printer', 0);
+INSERT 0 3
+postgres=# INSERT INTO warehouse_2 (product_id, product_name, quantity) VALUES
+postgres-# (1, 'Laptop', 2),
+postgres-# (2, 'Mouse', 0),
+postgres-# (3, 'Keyboard', 8),
+postgres-# (6, 'Headphones', 4),
+postgres-# (7, 'Webcam', 0);
+INSERT 0 5
+postgres=# -- Get all unique products from both warehouses
+postgres=# SELECT product_name FROM warehouse_1
+postgres-# UNION
+postgres-# SELECT product_name FROM warehouse_2;
+ product_name 
+--------------
+ Printer
+ Mouse
+ Laptop
+ Headphones
+ Webcam
+ Keyboard
+ Monitor
+(7 rows)
+
+postgres=# SELECT * FROM warehouse_1;
+ product_name | product_id | quantity 
+--------------+------------+----------
+ Keyboard     |          3 |        5
+ Monitor      |          4 |        3
+ Printer      |          5 |        0
+(3 rows)
+
+postgres=# SELECT * FROM warehouse_2;
+ product_name | product_id | quantity 
+--------------+------------+----------
+ Laptop       |          1 |        2
+ Mouse        |          2 |        0
+ Keyboard     |          3 |        8
+ Headphones   |          6 |        4
+ Webcam       |          7 |        0
+ Mouse        |          4 |        0
+(6 rows)
+
+postgres=# INSERT INTO warehouse_1 (product_id, product_name, quantity) VA
+LUES
+(4, 'Mouse', 0);
+ERROR:  duplicate key value violates unique constraint "warehouse_1_pkey"
+DETAIL:  Key (product_id)=(4) already exists.
+postgres=# INSERT INTO warehouse_1 (product_id, product_name, quantity) VALUES
+(5, 'Mouse', 0);
+ERROR:  duplicate key value violates unique constraint "warehouse_1_pkey"
+DETAIL:  Key (product_id)=(5) already exists.
+postgres=# INSERT INTO warehouse_1 (product_id, product_name, quantity) VALUES
+(6, 'Mouse', 0);
+INSERT 0 1
+postgres=# SELECT product_id FROM warehouse_1 WHERE quantity = 0
+INTERSECT
+SELECT product_id FROM warehouse_2 WHERE quantity = 0;
+ product_id 
+------------
+(0 rows)
+
+postgres=# SELECT * FROM warehouse_1
+postgres-# ;
+ product_name | product_id | quantity 
+--------------+------------+----------
+ Keyboard     |          3 |        5
+ Monitor      |          4 |        3
+ Printer      |          5 |        0
+ Mouse        |          6 |        0
+(4 rows)
+
+postgres=# INSERT INTO warehouse_1 (product_id, product_name, quantity) VALUES
+(6, 'Priner', 0);
+ERROR:  duplicate key value violates unique constraint "warehouse_1_pkey"
+DETAIL:  Key (product_id)=(6) already exists.
+postgres=# INSERT INTO warehouse_1 (product_id, product_name, quantity) VA
+LUES
+(7, 'Priner', 0);
+INSERT 0 1
+postgres=# SELECT * FROM warehouse_1
+;
+ product_name | product_id | quantity 
+--------------+------------+----------
+ Keyboard     |          3 |        5
+ Monitor      |          4 |        3
+ Printer      |          5 |        0
+ Mouse        |          6 |        0
+ Priner       |          7 |        0
+(5 rows)
+
+postgres=# -- Find products that are out of stock in both warehouses
+postgres=# SELECT product_id FROM warehouse_1 WHERE quantity = 0
+postgres-# INTERSECT
+postgres-# SELECT product_id FROM warehouse_2 WHERE quantity = 0;
+ product_id 
+------------
+          7
+(1 row)
+
+
+postgres=# SELECT
+postgres-#     first_name,
+postgres-#     last_name,
+postgres-#     department,
+postgres-#     salary,
+postgres-#     RANK() OVER (PARTITION BY department ORDER BY salary DESC) AS dept_salary_rank
+postgres-# FROM employees;
+ first_name | last_name  | department |   salary   | dept_salary_rank 
+------------+------------+------------+------------+------------------
+ Emma       | Davis      | Sales      |   78000.00 |                1
+ David      | Jones      | Sales      |   70000.00 |                2
+ Frank      | Miller     | Sales      |   64000.00 |                
+
+postgres=# SELECT
+postgres-#     product_name,
+postgres-#     SUM(CASE WHEN year = 2022 THEN sales_amount ELSE 0 END) AS year_2022,
+postgres-#     SUM(CASE WHEN year = 2023 THEN sales_amount ELSE 0 END) AS year_2023,
+postgres-#     SUM(CASE WHEN year = 2024 THEN sales_amount ELSE 0 END) AS year_2024
+postgres-# FROM sales
+postgres-# GROUP BY product_name;
+ product_name | year_2022 | year_2023 | year_2024 
+--------------+-----------+-----------+-----------
+ Mouse        |         0 |         0 |    700.00
+ Keyboard     |    800.00 |         0 |         0
+ Laptop       |         0 |  12000.00 |  15000.00
+(3 rows)
+
+postgres=# CREATE VIEW pivoted_sales AS
+postgres-# SELECT
+postgres-#     product_name,
+postgres-#     SUM(CASE WHEN year = 2022 THEN sales_amount ELSE 0 END) AS year_2022,
+postgres-#     SUM(CASE WHEN year = 2023 THEN sales_amount ELSE 0 END) AS year_2023,
+postgres-#     SUM(CASE WHEN year = 2024 THEN sales_amount ELSE 0 END) AS year_2024
+postgres-# FROM sales
+postgres-# GROUP BY product_name;
+CREATE VIEW
+postgres=# SELECT * FROM pivoted_sales ;
+ product_name | year_2022 | year_2023 | year_2024 
+--------------+-----------+-----------+-----------
+ Mouse        |         0 |         0 |    700.00
+ Keyboard     |    800.00 |         0 |         0
+ Laptop       |         0 | 
+
+ALTER TABLE
+postgres=# UPDATE employees SET tenture = 6 WHERE employee_id IN (5, 6);
+postgres=# UPDATE employees SET tenure = 6 WHERE employee_id IN (5, 6);
+UPDATE 2
+postgres=# UPDATE employees SET tenure = 4 WHERE employee_id IN (6, 4);
+UPDATE 2
+postgres=# UPDATE employees SET tenure = 7 WHERE employee_id IN (1, 3);
+UPDATE 2
+postgres=# SELECT
+postgres-#     employee_id,
+postgres-#     SUM(salary) OVER (PARTITION BY department) AS total_dept_salary,
+postgres-#     AVG(salary) FILTER (WHERE tenure > 5) OVER () AS avg_salary_senior
+postgres-# FROM employees;
+ employee_id | total_dept_salary | avg_salary_senior  
+-------------+-------------------+--------------------
+           5 |         212000.00 | 66000.000000000000
+           4 |         212000.00 | 66000.000000000000
+           6 |         212000.00 | 66000.000000000000
+           2 |        3120000.00 | 66000.000000000000
+           1 |        3120000.00 | 66000.000000000000
+           3 |        3120000.00 | 66000.000000000000
+(6 rows)
+postgres=# SELECT product_name, status
+postgres-# FROM orders
+postgres-# ORDER BY
+postgres-#     CASE status
+postgres-#         WHEN 'High Priority' THEN 1
+postgres-#         WHEN 'Medium Priority' THEN 2
+postgres-#         WHEN 'Low Priority' THEN 3
+postgres-#         ELSE 4
+postgres-#     END;
+    product_name    |     status      
+--------------------+-----------------
+ Iskander           | High Priority
+ Yak-42             | Medium Priority
+ Nails              | Medium Priority
+ capacitor 3000 mkf | Low Priority
+(4 rows)
