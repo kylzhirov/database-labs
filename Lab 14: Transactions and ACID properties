@@ -1,0 +1,407 @@
+postgres=# BEGIN;
+BEGIN
+postgres=*# UPDATE accounts SET balance = balance - 100 WHERE account_id = 1;
+UPDATE 1
+postgres=*# UPDATE accounts SET balance = balance + 100 WHERE account_id = 2;
+UPDATE 1
+postgres=*# COMMIT; -- Both updates are saved permanently
+COMMIT
+postgres=# SELECT * FROM accounts;
+ account_id | balance 
+------------+---------
+          3 |   50.00
+          4 |   81.00
+          1 |   59.00
+          2 |  300.00
+(4 rows)
+postgres=# BEGIN;
+BEGIN
+postgres=*# UPDATE accounts SET balance = balance - 100 WHERE account_id = 1;
+UPDATE 1
+postgres=*# UPDATE accounts SET balance = balance + 100 WHERE account_id = 2;
+UPDATE 1
+postgres=*# -- Something went wrong, undo everything
+postgres=*# ROLLBACK; -- Both updates are undone
+ROLLBACK
+postgres=# SELECT * FROM accounts;
+ account_id | balance 
+------------+---------
+          3 |   50.00
+          4 |   81.00
+          1 |   59.00
+          2 |  300.00
+(4 rows)
+postgres=*# -- If sufficient, perform the transfer
+postgres=*# UPDATE accounts SET balance = balance - 500 WHERE account_id = 1;
+UPDATE 1
+postgres=*# UPDATE accounts SET balance = balance + 500 WHERE account_id = 2;
+UPDATE 1
+postgres=*# 
+postgres=*# -- If everything is correct, commit
+postgres=*# COMMIT;
+COMMIT
+postgres=# 
+postgres=# -- If there was an error, we would ROLLBACK instead
+postgres=# SELECT * FROM accounts;
+ account_id | balance 
+------------+---------
+          3 |   50.00
+          4 |   81.00
+          1 | -441.00
+          2 |  800.00
+(4 rows)
+
+
+postgres=*# INSERT INTO orders (customer_id, total) VALUES (1, 250.00);
+ERROR:  column "total" of relation "orders" does not exist
+LINE 1: INSERT INTO orders (customer_id, total) VALUES (1, 250.00);
+                                         ^
+postgres=!# INSERT INTO order_items (order_id, product_id, quantity) VALUES (1, 101, 2);
+ERROR:  current transaction is aborted, commands ignored until end of transaction block
+
+postgres=!# -- If any of these fail, ALL are rolled back
+postgres=!# COMMIT;
+ROLLBACK
+
+postgres=# \d orders
+                                          Table "public.orders"
+    Column    |          Type          | Collation | Nullable |                 
+Default                  
+--------------+------------------------+-----------+----------+-----------------
+-------------------------
+ order_id     | integer                |           | not null | nextval('orders_
+order_id_seq'::regclass)
+ order_date   | date                   |           |          | 
+ amount       | numeric(10,2)          |           |          | 
+ region_id    | integer                |           |          | 
+ product_name | character varying(100) |           |          | 
+ customer_id  | integer                |           |          | 
+ total        | integer                |           |          | 
+Indexes:
+    "orders_pkey" PRIMARY KEY, btree (order_id)
+Foreign-key constraints:
+    "orders_customers_fk_customer_id" FOREIGN KEY (customer_id) REFERENCES custo
+mers(customer_id)
+
+postgres=# ALTER TABLE orders
+postgres-# DROP CONSTRAINT orders_customers_fk_customer_id ;
+ALTER TABLE
+postgres=# -- This transaction maintains consistency by respecting foreign key constraints
+postgres=# BEGIN;
+BEGIN
+postgres=*# INSERT INTO customers (name, email) VALUES ('John Doe', 'john@email.com');
+INSERT 0 1
+postgres=*# INSERT INTO orders (customer_id, total) VALUES (LASTVAL(), 100.00);
+INSERT 0 1
+postgres=*# COMMIT;
+COMMIT
+
+SESSION 1:
+postgres=# BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED;
+BEGIN
+postgres=*# SELECT * FROM accounts WHERE balance > 1000;
+ account_id | balance 
+------------+---------
+          5 | 1300.00
+         11 | 2300.00
+         13 | 1150.00
+(3 rows)
+
+SESSION 2:
+postgres=# BEGIN;
+BEGIN
+postgres=*# UPDATE accounts SET balance=12312313 WHERE account_id=6;
+UPDATE 1
+
+COMMIT
+
+postgres=*# SELECT * FROM accounts WHERE balance > 1000;
+ account_id |   balance   
+------------+-------------
+          5 |     1300.00
+         11 |     2300.00
+         13 |     1150.00
+          6 | 12312313.00
+(4 rows)
+
+COMMIT
+
+REPEATABLE READ;
+SESSION 1:
+BEGIN TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+SELECT * FROM accounts WHERE balance > 1000;
+ account_id |   balance   
+------------+-------------
+          5 |     1300.00
+         11 |     2300.00
+         13 |     1150.00
+          6 | 12312313.00
+(4 rows)
+
+SESSION 2:
+postgres=# BEGIN;
+BEGIN
+postgres=*# UPDATE accounts SET balance=1000 WHERE account_id=6;
+UPDATE 1
+postgres=*# COMMIT;
+COMMIT
+
+SESSION 1:
+postgres=*# SELECT * FROM accounts WHERE balance > 1000;
+ account_id |   balance   
+------------+-------------
+          5 |     1300.00
+         11 |     2300.00
+         13 |     1150.00
+          6 | 12312313.00
+(4 rows)
+COMMIT
+
+
+SERIALIZABLE:
+
+postgres=# BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+SELECT * FROM accounts;
+UPDATE accounts SET balance = balance * 1.05; -- 5% interest
+COMMIT
+BEGIN
+ account_id | balance 
+------------+---------
+          3 |   50.00
+          4 |   81.00
+          2 |  800.00
+          1 | -541.00
+          5 | 1300.00
+          9 |  700.00
+         10 |  800.00
+         11 | 2300.00
+         13 | 1150.00
+         12 |    0.00
+         14 |    0.00
+          6 | 1000.00
+(12 rows)
+
+postgres=# SET TRANSACTION ISOLATION LEVEL REPEATABLE READ;
+WARNING:  SET TRANSACTION can only be used in transaction blocks
+SET
+
+postgres=# BEGIN;
+BEGIN
+postgres=*# INSERT INTO customers (name, email) VALUES ('Alice', 'alice@email.com');
+INSERT 0 1
+postgres=*# 
+postgres=*# SAVEPOINT after_customer_insert;
+SAVEPOINT
+postgres=*# 
+postgres=*# INSERT INTO orders (customer_id, total) VALUES (1, 500.00)
+postgres-*# ;
+INSERT 0 1
+postgres=*# INSERT INTO orders (customer_id, total) VALUES (81123, 1923918)
+postgres-*# ;
+INSERT 0 1
+postgres=*# -- Something went wrong with the order, rollback to savepoint
+postgres=*# ROLLBACK TO SAVEPOINT after_customer_insert;
+ROLLBACK
+
+SAVEPOINTS:
+
+postgres=# BEGIN;
+BEGIN
+postgres=*# INSERT INTO customers (name, email) VALUES ('Alice', 'alice@email.com');
+INSERT 0 1
+postgres=*# 
+postgres=*# SAVEPOINT after_customer_insert;
+SAVEPOINT
+postgres=*# 
+postgres=*# INSERT INTO orders (customer_id, total) VALUES (1, 500.00)
+postgres-*# ;
+INSERT 0 1
+postgres=*# INSERT INTO orders (customer_id, total) VALUES (81123, 1923918)
+postgres-*# ;
+INSERT 0 1
+postgres=*# -- Something went wrong with the order, rollback to savepoint
+postgres=*# ROLLBACK TO SAVEPOINT after_customer_insert;
+ROLLBACK
+postgres=*# -- Customer insert is still there, but order insert is undone
+postgres=*# INSERT INTO orders (customer_id, total) VALUES (1, 300.00);
+INSERT 0 1
+postgres=*# COMMIT; -- Only customer and the second order are committed
+COMMIT
+
+MULTIPLE SAVEPOINTS:
+
+postgres=# BEGIN;
+BEGIN
+postgres=*# 
+postgres=*# INSERT INTO products (name, price) VALUES ('Laptop', 999.99);
+INSERT 0 1
+postgres=*# SAVEPOINT sp1;
+SAVEPOINT
+postgres=*# 
+postgres=*# INSERT INTO products (name, price) VALUES ('Mouse', 25.99);
+INSERT 0 1
+postgres=*# SAVEPOINT sp2;
+SAVEPOINT
+postgres=*# 
+postgres=*# INSERT INTO products (name, price) VALUES ('Invalid Product', -50.00);
+INSERT 0 1
+postgres=*# -- This violates business rules
+postgres=*# 
+postgres=*# ROLLBACK TO SAVEPOINT sp2; -- Removes invalid product insert
+ROLLBACK
+postgres=*# -- Laptop and Mouse inserts are still active
+postgres=*# SELECT * FROM products ;
+  name  | price  
+--------+--------
+ Laptop | 999.99
+ Mouse  |  25.99
+(2 rows)
+
+postgres=*# INSERT INTO products (name, price) VALUES ('Keyboard', 79.99);
+INSERT 0 1
+postgres=*# 
+postgres=*# COMMIT; -- Commits Laptop, Mouse, and Keyboard
+COMMIT
+
+RELEASING SAVEPOINTS:
+
+postgres=# BEGIN;
+BEGIN
+postgres=*# INSERT INTO logs (message) VALUES ('Starting process');
+INSERT 0 1
+postgres=*# SAVEPOINT process_start;
+SAVEPOINT
+postgres=*# -- Do some work
+postgres=*# INSERT INTO logs (message) VALUES ('Process completed');
+INSERT 0 1
+postgres=*# 
+postgres=*# -- If everything is OK, release the savepoint
+postgres=*# RELEASE SAVEPOINT process_start;
+RELEASE
+postgres=*# 
+postgres=*# COMMIT;
+COMMIT
+
+
+postgres=# BEGIN;
+BEGIN
+postgres=*# UPDATE inventory SET stock = stock - 1 WHERE product_id = 101;
+UPDATE 1
+postgres=*# INSERT INTO order_items (order_id, product_id, quantity) VALUES (1, 101, 1);
+INSERT 0 1
+postgres=*# COMMIT;
+COMMIT
+
+Handle errors:
+
+
+postgres=!# COMMIT;
+ROLLBACK
+postgres=# BEGIN;
+BEGIN
+postgres=*# DO $$
+postgres$*# DECLARE
+postgres$*#     current_balance DECIMAL;
+postgres$*# BEGIN
+postgres$*#     SELECT balance INTO current_balance FROM accounts WHERE account_id = 1;
+postgres$*#     
+postgres$*#     IF current_balance < 100 THEN
+postgres$*#         RAISE EXCEPTION 'Insufficient funds in account 1';
+postgres$*#     END IF;
+postgres$*#     
+postgres$*#     UPDATE accounts SET balance = balance - 100 WHERE account_id = 1;
+postgres$*#     UPDATE accounts SET balance = balance + 100 WHERE account_id = 2;
+postgres$*#     
+postgres$*# EXCEPTION
+postgres$*#     WHEN OTHERS THEN
+postgres$*#         RAISE NOTICE 'Transaction failed: Insufficient funds';
+postgres$*#         ROLLBACK;
+postgres$*# END $$;
+DO
+
+postgres=# BEGIN TRANSACTION ISOLATION LEVEL SERIALIZABLE;
+BEGIN
+postgres=*# UPDATE accounts SET balance = balance + 1000000 WHERE account_id = 1;
+UPDATE 1
+postgres=*# COMMIT;
+COMMIT
+
+
+-- Reports
+postgres=# BEGIN TRANSACTION ISOLATION LEVEL READ COMMITTED;
+BEGIN
+postgres=*# SELECT
+    COUNT(*) AS total_accounts,
+    SUM(balance) AS total_balance,
+    AVG(balance) AS avg_balance 
+FROM accounts;
+ total_accounts | total_balance |    avg_balance     
+----------------+---------------+--------------------
+             12 |    1011381.00 | 84281.750000000000
+(1 row)
+
+postgres=*# COMMIT;
+COMMIT
+
+Complex operations with savepoints:
+
+postgres=# BEGIN;
+BEGIN
+postgres=*# -- Main operation
+postgres=*# INSERT INTO orders (customer_id, total) VALUES (1, 1000.00);
+INSERT 0 1
+postgres=*# 
+postgres=*# SAVEPOINT before_items;
+SAVEPOINT
+postgres=*# 
+postgres=*# -- Add items (might fail for some items)
+postgres=*# INSERT INTO order_items (order_id, product_id, quantity) 
+postgres-*# VALUES (currval('orders_order_id_seq'), 101, 2);
+INSERT 0 1
+postgres=*# 
+postgres=*# -- If this fails, rollback to savepoint and continue
+postgres=*# INSERT INTO order_items (order_id, product_id, quantity) 
+postgres-*# VALUES (currval('orders_order_id_seq'), 102, 1);
+INSERT 0 1
+postgres=*# 
+postgres=*# COMMIT;
+COMMIT
+
+postgres=# SELECT 
+postgres-#     blocked_locks.pid AS blocked_pid,
+postgres-#     blocked_activity.usename AS blocked_user,
+postgres-#     blocking_locks.pid AS blocking_pid,
+postgres-#     blocking_activity.usename AS blocking_user,
+postgres-#     blocked_activity.query AS blocked_statement
+postgres-# FROM pg_catalog.pg_locks blocked_locks
+postgres-# JOIN pg_catalog.pg_stat_activity blocked_activity 
+postgres-#     ON blocked_activity.pid = blocked_locks.pid
+postgres-# JOIN pg_catalog.pg_locks blocking_locks 
+postgres-#     ON blocking_locks.locktype = blocked_locks.locktype
+postgres-# JOIN pg_catalog.pg_stat_activity blocking_activity
+postgres-#     ON blocking_activity.pid = blocking_locks.pid
+postgres-# WHERE NOT blocked_locks.granted;
+ blocked_pid | blocked_user | blocking_pid | blocking_user | blocked_statement 
+-------------+--------------+--------------+---------------+-------------------
+(0 rows)
+
+
+postgres=# -- Good: Explicit transaction control
+postgres=# BEGIN;
+BEGIN
+postgres=*# INSERT INTO audit_log (action, timestamp) VALUES ('user_creation', NOW());
+INSERT 0 1
+postgres=*# INSERT INTO users (name, email) VALUES ('John Doe', 'john@example.com');
+INSERT 0 1
+postgres=*# INSERT INTO user_preferences (user_id, theme) VALUES (currval('users_id_seq'), 'dark');
+INSERT 0 1
+postgres=*# COMMIT;
+COMMIT
+postgres=# 
+postgres=# -- Avoid: Relying on autocommit for related operations
+postgres=# INSERT INTO audit_log (action, timestamp) VALUES ('user_creation', NOW());
+INSERT 0 1
+postgres=# -- If this fails, the audit log entry above is already committed
+postgres=# INSERT INTO users (name, email) VALUES ('John Doe', 'john@example.com');
+ERROR:  duplicate key value violates unique constraint "users_email_key"
+DETAIL:  Key (email)=(john@example.com) already exists.
