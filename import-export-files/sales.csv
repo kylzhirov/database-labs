@@ -1,0 +1,45 @@
+product_name,quantity,price,sale_date
+Widget A,10,19.99,2023-07-01
+Gadget B,NULL,29.95,2023-07-02
+Tool C,5,NULL,2023-07-03
+Gadget B,2,29.95,NULL
+Widget A,NULL,NULL,NULL
+
+
+pg_dump -h localhost -U postgres -d postgres > backup.sql
+pg_dump -h localhost -U postgres -d postgres -Fc > backup.dump
+pg_dump -h localhost -U postgres -d postgres -t employees -t departments > tables_backup.sql
+pg_dump -h localhost -U postgres -d postgres -Fc -v > backup.dump
+
+pg_restore - Restoring backups:
+pg_restore -h localhost -U postgres -d postgres backup.dump
+createdb new_database
+pg_restore -h localhost -U postgres -d new_database backup.dump
+pg_restore -h localhost -U postgres -d postgres -t employees backup.dump
+pg_restore -h localhost -U postgres -d postgres -j 4 backup.dump
+
+# Create base backup using pg_basebackup
+pg_basebackup -h localhost -U postgres -D /backup/base -Ft -z -P
+
+# Create base backup with WAL files included
+pg_basebackup -h localhost -U postgres -D /backup/base -x -P
+
+
+-- Performing PTR
+# 1. Stop PostgreSQL server
+sudo systemctl stop postgresql
+
+# 2. Remove current data directory
+rm -rf /var/lib/postgresql/data/*
+
+# 3. Restore base backup
+tar -xf /backup/base/base.tar -C /var/lib/postgresql/data/
+
+# 4. Create recovery configuration
+cat > /var/lib/postgresql/data/recovery.signal << EOF
+restore_command = 'cp /backup/wal/%f %p'
+recovery_target_time = '2024-01-15 14:30:00'
+EOF
+
+# 5. Start PostgreSQL (recovery will begin automatically)
+sudo systemctl start postgresql

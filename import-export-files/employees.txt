@@ -1,0 +1,7 @@
+employee_id|first_name|last_name|salary|manager_id|department|tenure
+2|Charlie|Kirk|3000000.00|N/A|N/A|N/A
+5|Emma|Davis|78000.00|N/A|Sales|6
+4|David|Jones|70000.00|N/A|Sales|4
+6|Frank|Miller|64000.00|N/A|Sales|4
+1|Aibek|Sharshenov|60000.00|1|N/A|7
+3|Bakyt|Mamatov|60000.00|2|N/A|7

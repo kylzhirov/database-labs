@@ -1,0 +1,503 @@
+postgres=# \copy (SELECT * FROM employees) to 'employees' with csv
+COPY 6
+
+employees.csv:
+employee_id,first_name,last_name,salary,manager_id,department,tenure
+2,Charlie,Kirk,3000000.00,,,
+5,Emma,Davis,78000.00,,Sales,6
+4,David,Jones,70000.00,,Sales,4
+6,Frank,Miller,64000.00,,Sales,4
+1,Aibek,Sharshenov,60000.00,1,,7
+3,Bakyt,Mamatov,60000.00,2,,7
+
+postgres=# CREATE TABLE employees (
+employee_id SERIAL PRIMARY KEY,
+first_name VARCHAR(100),
+last_name VARCHAR(100),
+salary DECIMAL(10, 2),
+manager_id INT,
+department VARCHAR(100),
+tenure INT);
+CREATE TABLE
+postgres=# \copy employees FROM employees.csv WITH CSV HEADER;
+COPY 6
+
+postgres=# SELECT * FROM employees;
+ employee_id | first_name | last_name  |   salary   | manager_id | department | 
+tenure 
+-------------+------------+------------+------------+------------+------------+-
+-------
+           2 | Charlie    | Kirk       | 3000000.00 |            |            | 
+      
+           5 | Emma       | Davis      |   78000.00 |            | Sales      | 
+     6
+           4 | David      | Jones      |   70000.00 |            | Sales      | 
+     4
+           6 | Frank      | Miller     |   64000.00 |            | Sales      | 
+     4
+           1 | Aibek      | Sharshenov |   60000.00 |          1 |            | 
+     7
+           3 | Bakyt      | Mamatov    |   60000.00 |          2 |            | 
+     7
+(6 rows)
+
+
+COPY employees TO '/tmp/employees.txt' 
+WITH DELIMITER '|' NULL 'N/A' CSV HEADER;
+
+employees.txt:
+employee_id|first_name|last_name|salary|manager_id|department|tenure
+2|Charlie|Kirk|3000000.00|N/A|N/A|N/A
+5|Emma|Davis|78000.00|N/A|Sales|6
+4|David|Jones|70000.00|N/A|Sales|4
+6|Frank|Miller|64000.00|N/A|Sales|4
+1|Aibek|Sharshenov|60000.00|1|N/A|7
+3|Bakyt|Mamatov|60000.00|2|N/A|7
+
+(new file)
+employees.csv
+first_name,last_name,email
+Farnk,Davis,email@example.com
+Emma,Davis,lskadfj@example.com
+Alice,Jones,da1234@example.com
+
+postgres=# \copy employees(first_name, last_name, email) 
+FROM 'employees.csv' delimiter ',' CSV;
+COPY 4
+
+postgres=# SELECT * FROM employees;
+ employee_id | first_name | last_name | salary | manager_id | department | tenur
+e |        email        
+-------------+------------+-----------+--------+------------+------------+------
+--+---------------------
+           3 | first_name | last_name |        |            |            |      
+  | email
+           4 | Farnk      | Davis     |        |            |            |      
+  | email@example.com
+           5 | Emma       | Davis     |        |            |            |      
+  | lskadfj@example.com
+           6 | Alice      | Jones     |        |            |            |      
+  | da1234@example.com
+(4 rows)
+
+
+
+postgres=# UPDATE employees
+postgres-# SET department='IT'
+postgres-# WHERE employee_id IN (3, 5);
+UPDATE 2
+
+postgres=# \copy (SELECT * FROM employees WHERE department = 'IT')
+TO 'it_employees.csv' WITH CSV HEADER;
+COPY 2
+
+it_employees.csv:
+employee_id,first_name,last_name,department,email
+3,first_name,last_name,IT,email -- typo
+5,Emma,Davis,IT,lskadfj@example.com
+
+COPY products TO 'geass/database-labs/import-export-files/products.csv'
+WITH CSV HEADER;
+COPY 3
+
+postgres=# \copy products TO 'geass/database-labs/import-export-files/customers.csv' WITH CSV HEADER DELIMITER ';' QUOTE '"';;
+COPY 3
+customers.csv:
+customer_id;name;email
+1;Alex;al1999@example.com
+2;Edward;ed2000@example.com
+8;Nathan;na1998@example.com
+10;John Doe;john@email.com
+11;Alice;alice@email.com
+
+postgres=# \copy orders TO 'geass/database-labs/import-export-files/orders.csv'
+WITH CSV HEADER DELIMITER ';' QUOTE '"';;
+COPY 3
+orders.csv:
+order_id;order_date;amount;region_id;product_name;customer_id;total
+6;;;;;6;100
+9;;;;;1;300
+13;;;;;1;1000
+
+postgres=# \copy products FROM 'geass/database-labs/import-export-files/products.csv' WITH CSV HEADER;
+COPY 3
+postgres=# \dt products
+
+                     Table "public.products"
+ Column |          Type          | Collation | Nullable | Default 
+--------+------------------------+-----------+----------+---------
+ name   | character varying(100) |           |          | 
+ price  | numeric(10,2)          |           |          | 
+
+postgres=# \copy products FROM 'geass/database-labs/import-export-files/products.csv' WITH CSV HEADER ENCODING 'UTF8';
+COPY 3
+
+postgres=# \copy customer_feedback TO 'geass/database-labs/import-export-f
+iles/feedback.csv' 
+WITH CSV HEADER DELIMITER ',' QUOTE '"' ESCAPE '"';
+COPY 4
+
+feedback.csv
+id,customer_name,feedback,submitted_at
+1,"Smith, John",Great product,2025-09-24 19:24:30.765446
+2,"Alice ""Allie"" Brown",Great product,2025-09-24 19:24:30.765446
+3,Bob Miller,"Fast shipping, good support",2025-09-24 19:24:30.765446
+4,Jane Doe,"Fast shipping, good support",2025-09-24 19:24:30.765446
+
+postgres=# \copy sales_data (product_name, quantity, price, sale_date) FROM 'geass/database-labs/import-export-files/sales.csv' WITH CSV HEADER NULL 'NULL';
+COPY 5
+
+                                  Table "public.sales_data"
+    Column    |     Type      | Collation | Nullable |                Defa
+ult                 
+--------------+---------------+-----------+----------+--------------------
+--------------------
+ id           | integer       |           | not null | nextval('sales_data
+_id_seq'::regclass)
+ product_name | text          |           |          | 
+ quantity     | integer       |           |          | 
+ price        | numeric(10,2) |           |          | 
+ sale_date    | date          |           |          | 
+Indexes:
+    "sales_data_pkey" PRIMARY KEY, btree (id)
+
+[postgres@ubuntu ~]$ pg_dump -h localhost -U postgres -d postgres > backup.sql
+pg_dump -h localhost -U postgres -d postgres -Fc > backup.dump
+pg_dump -h localhost -U postgres -d postgres -t employees -t departments > tables_backup.sql
+pg_dump -h localhost -U postgres -d postgres -Fc -v > backup.dump
+pg_dump: last built-in OID is 16383
+pg_dump: reading extensions
+pg_dump: identifying extension members
+pg_dump: reading schemas
+pg_dump: reading user-defined tables
+pg_dump: reading user-defined functions
+pg_dump: reading user-defined types
+pg_dump: reading procedural languages
+pg_dump: reading user-defined aggregate functions
+pg_dump: reading user-defined operators
+pg_dump: reading user-defined access methods
+pg_dump: reading user-defined operator classes
+pg_dump: reading user-defined operator families
+pg_dump: reading user-defined text search parsers
+pg_dump: reading user-defined text search templates
+pg_dump: reading user-defined text search dictionaries
+pg_dump: reading user-defined text search configurations
+pg_dump: reading user-defined foreign-data wrappers
+pg_dump: reading user-defined foreign servers
+pg_dump: reading default privileges
+pg_dump: reading user-defined collations
+pg_dump: reading user-defined conversions
+pg_dump: reading type casts
+pg_dump: reading transforms
+pg_dump: reading table inheritance information
+pg_dump: reading event triggers
+pg_dump: finding extension tables
+pg_dump: finding inheritance relationships
+pg_dump: reading column info for interesting tables
+pg_dump: finding table default expressions
+pg_dump: finding table check constraints
+pg_dump: flagging inherited columns in subtables
+pg_dump: reading partitioning data
+pg_dump: reading indexes
+pg_dump: flagging indexes in partitioned tables
+pg_dump: reading extended statistics
+pg_dump: reading constraints
+pg_dump: reading triggers
+pg_dump: reading rewrite rules
+pg_dump: reading policies
+pg_dump: reading row-level security policies
+pg_dump: reading publications
+pg_dump: reading publication membership of tables
+pg_dump: reading publication membership of schemas
+pg_dump: reading subscriptions
+pg_dump: reading subscription membership of tables
+pg_dump: reading large objects
+pg_dump: reading dependency data
+pg_dump: saving encoding = UTF8
+pg_dump: saving "standard_conforming_strings = on"
+pg_dump: saving "search_path = "
+pg_dump: saving database definition
+pg_dump: dumping contents of table "public.accounts"
+pg_dump: dumping contents of table "public.audit_log"
+pg_dump: dumping contents of table "public.customer_feedback"
+pg_dump: dumping contents of table "public.customers"
+pg_dump: dumping contents of table "public.employees"
+pg_dump: dumping contents of table "public.inventory"
+pg_dump: dumping contents of table "public.logs"
+pg_dump: dumping contents of table "public.managers"
+pg_dump: dumping contents of table "public.order_items"
+pg_dump: dumping contents of table "public.orders"
+pg_dump: dumping contents of table "public.pg_locks"
+pg_dump: dumping contents of table "public.pg_stat_activity"
+pg_dump: dumping contents of table "public.products"
+pg_dump: dumping contents of table "public.regional_sales"
+pg_dump: dumping contents of table "public.sales"
+pg_dump: dumping contents of table "public.sales_data"
+pg_dump: dumping contents of table "public.students"
+pg_dump: dumping contents of table "public.user_preferences"
+pg_dump: dumping contents of table "public.users"
+pg_dump: dumping contents of table "public.warehouse_1"
+pg_dump: dumping contents of table "public.warehouse_2"
+
+pg_restore - Restoring backups:
+pg_restore -h localhost -U postgres -d postgres backup.dump
+createdb new_database
+pg_restore -h localhost -U postgres -d new_database backup.dump
+pg_restore -h localhost -U postgres -d postgres -t employees backup.dump
+pg_restore -h localhost -U postgres -d postgres -j 4 backup.dump
+
+-- All tables from the restore file are already exist, so there are dublicate errors
+
+
+
+-- Backup of all databases
+pg_dumpall -h localhost -U postgres > full_cluster_backup.sql
+
+pg_dump -h localhost -U postgres -d postgres -Fc --verbose > full_production_backup.dump
+pg_dump: last built-in OID is 16383
+pg_dump: reading extensions
+pg_dump: identifying extension members
+pg_dump: reading schemas
+pg_dump: reading user-defined tables
+pg_dump: reading user-defined functions
+pg_dump: reading user-defined types
+pg_dump: reading procedural languages
+pg_dump: reading user-defined aggregate functions
+pg_dump: reading user-defined operators
+pg_dump: reading user-defined access methods
+pg_dump: reading user-defined operator classes
+pg_dump: reading user-defined operator families
+pg_dump: reading user-defined text search parsers
+pg_dump: reading user-defined text search templates
+pg_dump: reading user-defined text search dictionaries
+pg_dump: reading user-defined text search configurations
+pg_dump: reading user-defined foreign-data wrappers
+pg_dump: reading user-defined foreign servers
+pg_dump: reading default privileges
+pg_dump: reading user-defined collations
+pg_dump: reading user-defined conversions
+pg_dump: reading type casts
+pg_dump: reading transforms
+pg_dump: reading table inheritance information
+pg_dump: reading event triggers
+pg_dump: finding extension tables
+pg_dump: finding inheritance relationships
+pg_dump: reading column info for interesting tables
+pg_dump: finding table default expressions
+pg_dump: finding table check constraints
+pg_dump: flagging inherited columns in subtables
+pg_dump: reading partitioning data
+pg_dump: reading indexes
+pg_dump: flagging indexes in partitioned tables
+pg_dump: reading extended statistics
+pg_dump: reading constraints
+pg_dump: reading triggers
+pg_dump: reading rewrite rules
+pg_dump: reading policies
+pg_dump: reading row-level security policies
+pg_dump: reading publications
+pg_dump: reading publication membership of tables
+pg_dump: reading publication membership of schemas
+pg_dump: reading subscriptions
+pg_dump: reading subscription membership of tables
+pg_dump: reading large objects
+pg_dump: reading dependency data
+pg_dump: saving encoding = UTF8
+pg_dump: saving "standard_conforming_strings = on"
+pg_dump: saving "search_path = "
+pg_dump: saving database definition
+pg_dump: dumping contents of table "public.accounts"
+pg_dump: dumping contents of table "public.audit_log"
+pg_dump: dumping contents of table "public.customer_feedback"
+pg_dump: dumping contents of table "public.customers"
+pg_dump: dumping contents of table "public.employees"
+pg_dump: dumping contents of table "public.inventory"
+pg_dump: dumping contents of table "public.logs"
+pg_dump: dumping contents of table "public.managers"
+pg_dump: dumping contents of table "public.order_items"
+pg_dump: dumping contents of table "public.orders"
+pg_dump: dumping contents of table "public.pg_locks"
+pg_dump: dumping contents of table "public.pg_stat_activity"
+pg_dump: dumping contents of table "public.products"
+pg_dump: dumping contents of table "public.regional_sales"
+pg_dump: dumping contents of table "public.sales"
+pg_dump: dumping contents of table "public.sales_data"
+pg_dump: dumping contents of table "public.students"
+pg_dump: dumping contents of table "public.user_preferences"
+pg_dump: dumping contents of table "public.users"
+pg_dump: dumping contents of table "public.warehouse_1"
+pg_dump: dumping contents of table "public.warehouse_2"
+
+pg_dump -h localhost -U postgres -d postgres -Fc -O > backup_with_ownership.dump
+
+
+ GNU nano 8.6                          pg_daily_backup.sh                                     
+#!/bin/bash
+# Daily backup script
+DATE=$(date +%Y%m%d_%H%M%S)
+BACKUP_DIR="backups/postgresql"
+DB_NAME=postgres""
+
+pg_dump -h localhost -U postgres -d $DB_NAME -Fc > "$BACKUP_DIR/${DB_NAME}_${DATE}.dump"
+
+# Keep only last 7 days of backups
+find $BACKUP_DIR -name "${DB_NAME}_*.dump" -mtime +7 -delete
+
+
+# Test backup integrity
+pg_restore --list backup.dump
+
+# Verify backup can be restored (to test database)
+createdb test_restore
+pg_restore -d test_restore backup.dump
+;
+; Archive created at 2025-09-25 09:57:11 +06
+;     dbname: postgres
+;     TOC Entries: 135
+;     Compression: gzip
+;     Dump Version: 1.16-0
+;     Format: CUSTOM
+;     Integer: 4 bytes
+;     Offset: 8 bytes
+;     Dumped from database version: 17.5
+;     Dumped by pg_dump version: 17.5
+;
+;
+; Selected TOC Entries:
+;
+232; 1259 32926 TABLE public accounts postgres
+231; 1259 32925 SEQUENCE public accounts_account_id_seq postgres
+3623; 0 0 SEQUENCE OWNED BY public accounts_account_id_seq postgres
+245; 1259 32996 TABLE public audit_log postgres
+...
+
+postgres=# SHOW config_file;
+              config_file               
+----------------------------------------
+ /var/lib/postgres/data/postgresql.conf
+(1 row)
+
+-- Enable WAL archiving in postgresql.conf
+archive_mode = on
+archive_command = 'cp %p /backup/wal/%f'
+wal_level = replica
+
+# pg_basebackup -h localhost -U postgres -D /backup/base -Ft -z -P
+49130/49130 kB (100%), 1/1 tablespace
+
+ pg_archivecleanup backups/wal 000000010000000000000010
+
+
+#------------------------------------------------------------------------------
+# CUSTOMIZED OPTIONS
+#------------------------------------------------------------------------------
+
+# Add settings for extensions here
+
+archive_mode = on
+archive_command = 'cp %p /backup/wal/%f'
+wal_level = replica
+restore_command = 'cp /backup/wal/%f %p'
+
+
+
+
+
+sudo -u postgres pg_basebackup -h localhost -U postgres -D /backup/base/ -F tar -X fetch -P
+
+65515/65515 kB (100%), 1/1 tablespace
+
+
+ 1. Stop PostgreSQL server
+sudo systemctl stop postgresql
+
+# 2. Remove current data directory
+rm -rf /var/lib/postgresql/data/*
+
+# 3. Restore base backup
+tar -xf /backup/base/base.tar -C /var/lib/postgresql/data/
+
+# 4. Create recovery configuration
+cat > /var/lib/postgresql/data/recovery.signal << EOF
+restore_command = 'cp /backup/wal/%f %p'
+recovery_target_time = '2024-01-15 14:30:00'
+EOF
+
+# 5. Start PostgreSQL (recovery will begin automatically)
+sudo systemctl start postgresql
+tar: /var/lib/postgresql/data: Cannot open: No such file or directory
+tar: Error is not recoverable: exiting now
+bash: /var/lib/postgresql/data/recovery.signal: No such file or directory
+[root@ubuntu postgres]# ls
+backup.dump  backup_with_ownership.dump  full_production_backup.dump
+backups      data			pg_daily_backup.sh
+backup.sql   full_cluster_backup.sql	tables_backup.sql
+[root@ubuntu postgres]# pwd
+/var/lib/postgres
+[root@ubuntu postgres]# cat > /var/lib/postgres/data/recovery.signal << EOF
+restore_command = 'cp /backup/wal/%f %p'
+recovery_target_time = '2024-01-15 14:30:00'
+EOF
+[root@ubuntu postgres]# sudo systemctl start postgresql
+
+-- Recovery targeting options:
+# Recovery to specific time
+recovery_target_time = '2024-01-15 14:30:00'
+
+# Recovery to specific transaction
+recovery_target_xid = '12345'
+
+# Recovery to named restore point
+recovery_target_name = 'before_data_migration'
+
+# Create named restore point
+SELECT pg_create_restore_point('before_data_migration');
+
+
+-- 1. Dump and Restore
+pg_dump -h source_host -U username -d source_db -Fc > migration.dump
+
+pg_restore -h target_host -U username -d target_db migration.dump
+
+-- 2. Logical Replication (Minimal Downtime)
+
+CREATE PUBLICATION migration_pub FOR ALL TABLES;
+
+CREATE SUBSCRIPTION migration_sub 
+CONNECTION 'host=source_host dbname=source_db user=replication_user' 
+PUBLICATION migration_pub;
+
+-- 3. Physical Replication (Zero Downtime)
+
+wal_level = replica
+max_wal_senders = 3
+
+# Create standby using pg_basebackup
+pg_basebackup -h primary_host -D /var/lib/postgresql/standby -U replication_user -R -P
+
+-- 4. ETL pipeline Migration
+CREATE TABLE staging_customers AS SELECT * FROM customers WHERE 1=0;
+COPY (SELECT * FROM customers LIMIT 10000 OFFSET 0) 
+TO '/tmp/customers_batch_1.csv' WITH CSV HEADER;
+COPY staging_customers FROM '/tmp/customers_batch_1.csv' WITH CSV HEADER;
+INSERT INTO target_customers 
+SELECT * FROM staging_customers 
+ON CONFLICT (customer_id) DO UPDATE SET ...;
+
+-- Migration Best Practises
+SELECT COUNT(*) FROM source_table;
+
+pg_dump -h source -U user -d db -t small_table | psql -h target -U user -d db
+
+SELECT pid, usename, application_name, client_addr, state 
+FROM pg_stat_activity 
+WHERE application_name = 'pg_dump';
+
+SELECT COUNT(*) FROM target_table;
+
+-- Handling large table migrations:
+
+CREATE TABLE large_table_2023 PARTITION OF large_table 
+FOR VALUES FROM ('2023-01-01') TO ('2024-01-01');
+
+pg_dump -h source -U user -d db -t large_table_2023 | psql -h target -U user -d db

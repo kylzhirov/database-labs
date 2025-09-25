@@ -1,0 +1,4 @@
+order_id;order_date;amount;region_id;product_name;customer_id;total
+6;;;;;6;100
+9;;;;;1;300
+13;;;;;1;1000
