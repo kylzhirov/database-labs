@@ -9,4 +9,5 @@ in .sql files.
 
 # Final Project Topic
 
-Database of convicts in Kyrgyzstan, statistical data.
+Database on the activities of Eco Quest participants
+(in an educational project)
