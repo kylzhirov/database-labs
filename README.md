@@ -7,6 +7,6 @@ For more detail explanation, certain part of the labs, particularly
 involving table creation, advanced querying and etc. are stored
 in .sql files.
 
-# Final Project
+# Final Project Topic
 
-Database of prisoners in Kyrgyzstan, statistical data.
+Database of convicts in Kyrgyzstan, statistical data.
