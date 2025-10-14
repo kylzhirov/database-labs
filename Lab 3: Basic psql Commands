@@ -1,64 +1,4 @@
-sudo -i -u postgres
-psql
-postgres=# \l
-                                                       List of databases
-     Name     |  Owner   | Encoding | Locale Provider |   Collate   |    Ctype    | Locale | ICU Rules |   Access
- privileges   
---------------+----------+----------+-----------------+-------------+-------------+--------+-----------+---------
---------------
- new_database | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | 
- postgres     | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | 
- template0    | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | =c/postg
-res          +
-              |          |          |                 |             |             |        |           | postgres
-=CTc/postgres
- template1    | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | =c/postg
-res          +
-              |          |          |                 |             |             |        |           | postgres
-=CTc/postgres
- test_restore | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | 
- university   | postgres | UTF8     | libc            | en_US.UTF-8 | en_US.UTF-8 |        |           | 
-(6 rows)
-
-postgres=# \c postgres
-You are now connected to database "postgres" as user "postgres".
-postgres=# \dt
-               List of relations
- Schema |       Name        | Type  |  Owner   
---------+-------------------+-------+----------
- public | accounts          | table | postgres
- public | audit_log         | table | postgres
- public | customer_feedback | table | postgres
- public | customers         | table | postgres
- public | employees         | table | postgres
- public | inventory         | table | postgres
- public | logs              | table | postgres
- public | managers          | table | postgres
- public | order_items       | table | postgres
- public | orders            | table | postgres
- public | products          | table | postgres
- public | regional_sales    | table | postgres
- public | sales             | table | postgres
- public | sales_data        | table | postgres
- public | students          | table | postgres
- public | user_preferences  | table | postgres
- public | users             | table | postgres
- public | warehouse_1       | table | postgres
- public | warehouse_2       | table | postgres
-(19 rows)
-
-postgres=# \d customers
-                                           Table "public.customers"
-   Column    |          Type          | Collation | Nullable |                    Default                     
--------------+------------------------+-----------+----------+------------------------------------------------
- customer_id | integer                |           | not null | nextval('customers_customer_id_seq'::regclass)
- name        | character varying(100) |           |          | 
- email       | character varying(100) |           |          | 
-Indexes:
-    "customers_pkey" PRIMARY KEY, btree (customer_id)
-
-
-postgres=# -- create data
+-- create data
 CREATE TABLE students (
     id SERIAL PRIMARY KEY,
     name VARCHAR(100),
@@ -67,13 +7,18 @@ CREATE TABLE students (
 
 -- insert data
 INSERT INTO students (name, age) VALUES ('Alice', 21), ('Bob', 23);
-CREATE TABLE
-INSERT 0 2
 
-postgres=# SELECT * FROM students;
+-- select data
+
+SELECT * FROM students;
 
 -- delete table
 DROP TABLE students;
+
+
+user@ubuntu# psql -U postgres -d postgres -f lab1.sql 
+CREATE TABLE
+INSERT 0 2
  id | name  | age 
 ----+-------+-----
   1 | Alice |  21
@@ -81,5 +26,3 @@ DROP TABLE students;
 (2 rows)
 
 DROP TABLE
-
-postgres=# \q
