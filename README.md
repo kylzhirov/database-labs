@@ -10,5 +10,4 @@ in .sql files.
 
 # Final Project Topic
 
-Database on the activities of Eco Quest participants
-(in an educational project)
+Integrated database in a web-server
