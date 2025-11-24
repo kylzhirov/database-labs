@@ -5,9 +5,17 @@ import java.sql.SQLException;
  
 public class DatabaseConnection {
     public static void main(String[] args) {
-        String url = "jdbc:postgresql://localhost:5432/postgres";
+
+        String port = System.getenv("DB_PORT"); 
+        String database = System.getenv("DB_NAME");
+
         String username = "postgres";
         String password = System.getenv("DB_PASSWORD");
+
+        if (port == null) port = "5432";
+        if (database == null) database = "postgres";
+
+        String url = "jdbc:postgresql://localhost:" + port + "/" +  database;
  
         try {
             // Establish a connection
