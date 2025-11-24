@@ -10,4 +10,4 @@ in .sql files.
 
 # Final Project Topic
 
-Integrated database in a web-server
+Integrated database in a web-server. The project files are available at the same repository as database labs in the directory final-project

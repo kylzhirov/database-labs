@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Login Form Validation</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        .container { max-width: 400px; margin: 0 auto; }
+        .main { border: 1px solid #ccc; padding: 20px; border-radius: 5px; }
+        label { display: block; margin: 10px 0 5px; }
+        input[type="text"], input[type="password"] { 
+            width: 100%; padding: 8px; margin-bottom: 10px; 
+            box-sizing: border-box; 
+        }
+        input[type="submit"] { 
+            background: #4CAF50; color: white; padding: 10px 15px; 
+            border: none; border-radius: 4px; cursor: pointer; 
+        }
+        input[type="submit"]:hover { background: #45a049; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="main">
+            <h2>Login</h2>
+            <form method="post" action="/login">
+                <label>Username:</label>
+                <input type="text" name="username" required/>
+                <label>Password:</label>
+                <input type="password" name="password" required/>
+                <input type="submit" value="LOGIN"/>
+            </form>
+            <br><br>
+            <p>Don't have an account? <a href="/register.html">Register here</a></p>
+            <p><small>Default user: admin / admin</small></p>
+        </div>
+    </div>
+</body>
+</html>
