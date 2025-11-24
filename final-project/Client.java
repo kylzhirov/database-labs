@@ -9,22 +9,24 @@ import java.io.BufferedOutputStream;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 
 public class Client implements Runnable {
 
     private Socket clientSocket;
     private Thread thread;
-    private static final String USERS_DIR = "users";
 
     public Client(Socket clientSocket) {
         this.clientSocket = clientSocket;
         thread = new Thread(this);
-
-        try {
-            Files.createDirectories(Paths.get(USERS_DIR));
-        } catch (IOException e) {
-            System.out.println("Error: failed to create users directory: " + e.getMessage());
-        }
+        
+        // Initialize database on first client connection
+        DatabaseConnection.initializeDatabase();
     }
 
     public void run() {
@@ -69,7 +71,7 @@ public class Client implements Runnable {
             String header;
             while (true) {
                 header = reader.readLine();
-                if (header.isEmpty()) {
+                if (header == null || header.isEmpty()) {
                     break;
                 } else if (header.startsWith("Content-Length:")) {
                     String[] parts = header.split(":");
@@ -94,6 +96,20 @@ public class Client implements Runnable {
         }
     }
 
+    private String hashPassword(String password) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] hashedBytes = md.digest(password.getBytes());
+            StringBuilder sb = new StringBuilder();
+            for (byte b : hashedBytes) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error: SHA-256 algorithm not available");
+        }
+    }
+
     private void handleRegistration(BufferedReader bufferedReader, int contentLength) {
         try {
             System.out.println("CONTENT LENGTH: " + contentLength);
@@ -102,7 +118,6 @@ public class Client implements Runnable {
             System.out.println(body);
             String postData = new String(body);
             
-            // for http POST methods with body: username=asd&password=123
             String[] pairsBody = postData.split("&");
             String username = null;
             String password = null;
@@ -118,15 +133,33 @@ public class Client implements Runnable {
                 }
             }
             
-            if (username != null && password != null) {
-                Path userFile = Paths.get(USERS_DIR, username + ".txt");
-                if (Files.exists(userFile)) {
-                    sendError(409, "Username already exists");
-                } else {
-                    Files.write(userFile, password.getBytes("UTF-8"));
-                    System.out.println("New user registered: " + username);
+            if (!username.trim().isEmpty() && !password.trim().isEmpty()) {
+                String checkUserSQL = "SELECT id FROM users WHERE username = ?";
+                try (Connection conn = DatabaseConnection.getConnection();
+                     PreparedStatement checkStatement = conn.prepareStatement(checkUserSQL)) {
                     
-                    serveFile("/register_success.html");
+                    checkStatement.setString(1, username.trim());
+                    ResultSet rs = checkStatement.executeQuery();
+                    
+                    if (rs.next()) {
+                        sendError(409, "Username already exists");
+                    } else {
+                        // Insert new user
+                        String insertSQL = "INSERT INTO users (username, password) VALUES (?, ?)";
+                        try (PreparedStatement insertStatement = conn.prepareStatement(insertSQL)) {
+                            String hashedPassword = hashPassword(password);
+                            insertStatement.setString(1, username.trim());
+                            insertStatement.setString(2, hashedPassword);
+                            insertStatement.executeUpdate();
+                            
+                            System.out.println("New user registered: " + username);
+                            serveFile("/register_success.html");
+                        }
+                    }
+                } catch (SQLException e) {
+                    System.out.println("Database error during registration: " + e.getMessage());
+                    e.printStackTrace();
+                    sendError(500, "Database connection error: " + e.getMessage());
                 }
             } else {
                 sendError(400, "Invalid registration data");
@@ -134,41 +167,49 @@ public class Client implements Runnable {
             
         } catch (Exception e) {
             System.out.println("Error handling registration: " + e.getMessage());
-            sendError(500, "Internal server error");
+            e.printStackTrace();
+            sendError(500, "Internal server error: " + e.getMessage());
         }
     }
 
     private void handleLogin(BufferedReader bufferedReader, int contentLength) {
-        try {
-            char[] body = new char[contentLength];
-            bufferedReader.read(body, 0, contentLength);
-            String postData = new String(body);
-            
-            String[] pairsBody = postData.split("&");
-            String username = null;
-            String password = null;
-            
-            for (String authCredentials : pairsBody) {
-                String[] pairsAuthCredentials = authCredentials.split("=");
-                if (pairsAuthCredentials.length == 2) {
-                    if ("username".equals(pairsAuthCredentials[0])) {
-                        username = java.net.URLDecoder.decode(pairsAuthCredentials[1], "UTF-8");
-                    } else if ("password".equals(pairsAuthCredentials[0])) {
-                        password = java.net.URLDecoder.decode(pairsAuthCredentials[1], "UTF-8");
-                    }
+    try {
+        char[] body = new char[contentLength];
+        bufferedReader.read(body, 0, contentLength);
+        String postData = new String(body);
+        
+        String[] pairsBody = postData.split("&");
+        String username = null;
+        String password = null;
+        
+        for (String authCredentials : pairsBody) {
+            String[] pairsAuthCredentials = authCredentials.split("=");
+            if (pairsAuthCredentials.length == 2) {
+                if ("username".equals(pairsAuthCredentials[0])) {
+                    username = java.net.URLDecoder.decode(pairsAuthCredentials[1], "UTF-8");
+                } else if ("password".equals(pairsAuthCredentials[0])) {
+                    password = java.net.URLDecoder.decode(pairsAuthCredentials[1], "UTF-8");
                 }
             }
-            
-            if (username != null && password != null) {
-                Path userFile = Paths.get(USERS_DIR, username + ".txt");
-                if (Files.exists(userFile)) {
-                    String storedPassword = new String(Files.readAllBytes(userFile), "UTF-8").trim();
-                    System.out.println("Stored password for '" + username + "': '" + storedPassword + "'");
-                    System.out.println("Provided password: '" + password + "'");
+        }
+        
+        if (username != null && password != null && !username.trim().isEmpty() && !password.trim().isEmpty()) {
+            String selectSQL = "SELECT password FROM users WHERE username = ?";
+            try (Connection conn = DatabaseConnection.getConnection();
+                 PreparedStatement stmt = conn.prepareStatement(selectSQL)) {
+                
+                stmt.setString(1, username.trim());
+                ResultSet rs = stmt.executeQuery();
+                
+                if (rs.next()) {
+                    String storedHashedPassword = rs.getString("password");
+                    String providedHashedPassword = hashPassword(password);
                     
-                    if (storedPassword.equals(password.trim())) {
+                    System.out.println("Stored hash for '" + username + "': '" + storedHashedPassword + "'");
+                    System.out.println("Provided hash: '" + providedHashedPassword + "'");
+                    
+                    if (storedHashedPassword.equals(providedHashedPassword)) {
                         System.out.println("User logged in: " + username);
-                        
                         serveFile("/success.html");
                     } else {
                         System.out.println("Password mismatch for user: " + username);
@@ -178,16 +219,22 @@ public class Client implements Runnable {
                     System.out.println("User not found: " + username);
                     sendError(401, "Invalid username or password");
                 }
-            } else {
-                sendError(400, "Invalid login data");
+            } catch (SQLException e) {
+                System.out.println("Database error during login: " + e.getMessage());
+                e.printStackTrace(); // Add this to see the full stack trace
+                sendError(500, "Database connection error: " + e.getMessage());
             }
-            
+        } else {
+            sendError(400, "Invalid login data");
+        }
+        
         } catch (Exception e) {
             System.out.println("Error handling login: " + e.getMessage());
             e.printStackTrace();
-            sendError(500, "Internal server error");
+            sendError(500, "Internal server error: " + e.getMessage());
         }
     }
+
 
     private void serveFile(String requestedPath) {
         try {
