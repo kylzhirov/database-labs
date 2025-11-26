@@ -13,20 +13,25 @@ import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
+
+import javax.xml.crypto.Data;
+
+import utility.PasswordAuthentication;
 
 public class Client implements Runnable {
 
     private Socket clientSocket;
     private Thread thread;
+    private PasswordAuthentication passwordAuth;
+    private DatabaseConnection databaseConnection = DatabaseConnection.getInstance();
 
     public Client(Socket clientSocket) {
         this.clientSocket = clientSocket;
         thread = new Thread(this);
         
         // Initialize database on first client connection
-        DatabaseConnection.initializeDatabase();
+        databaseConnection.initializeDatabase();
+        passwordAuth = new PasswordAuthentication();
     }
 
     public void run() {
@@ -71,7 +76,7 @@ public class Client implements Runnable {
             String header;
             while (true) {
                 header = reader.readLine();
-                if (header == null || header.isEmpty()) {
+                if (header.isEmpty()) {
                     break;
                 } else if (header.startsWith("Content-Length:")) {
                     String[] parts = header.split(":");
@@ -93,20 +98,6 @@ public class Client implements Runnable {
 
         } catch (IOException ioe) {
             System.out.println("Error: failed to handle request: " + ioe.getMessage());
-        }
-    }
-
-    private String hashPassword(String password) {
-        try {
-            MessageDigest md = MessageDigest.getInstance("SHA-256");
-            byte[] hashedBytes = md.digest(password.getBytes());
-            StringBuilder sb = new StringBuilder();
-            for (byte b : hashedBytes) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Error: SHA-256 algorithm not available");
         }
     }
 
@@ -135,7 +126,7 @@ public class Client implements Runnable {
             
             if (!username.trim().isEmpty() && !password.trim().isEmpty()) {
                 String checkUserSQL = "SELECT id FROM users WHERE username = ?";
-                try (Connection conn = DatabaseConnection.getConnection();
+                try (Connection conn = databaseConnection.getConnection();
                      PreparedStatement checkStatement = conn.prepareStatement(checkUserSQL)) {
                     
                     checkStatement.setString(1, username.trim());
@@ -147,7 +138,7 @@ public class Client implements Runnable {
                         // Insert new user
                         String insertSQL = "INSERT INTO users (username, password) VALUES (?, ?)";
                         try (PreparedStatement insertStatement = conn.prepareStatement(insertSQL)) {
-                            String hashedPassword = hashPassword(password);
+                            String hashedPassword = passwordAuth.hash(password);
                             insertStatement.setString(1, username.trim());
                             insertStatement.setString(2, hashedPassword);
                             insertStatement.executeUpdate();
@@ -193,9 +184,9 @@ public class Client implements Runnable {
             }
         }
         
-        if (username != null && password != null && !username.trim().isEmpty() && !password.trim().isEmpty()) {
+        if (!username.trim().isEmpty() && !password.trim().isEmpty()) {
             String selectSQL = "SELECT password FROM users WHERE username = ?";
-            try (Connection conn = DatabaseConnection.getConnection();
+            try (Connection conn = databaseConnection.getConnection();
                  PreparedStatement stmt = conn.prepareStatement(selectSQL)) {
                 
                 stmt.setString(1, username.trim());
@@ -203,12 +194,13 @@ public class Client implements Runnable {
                 
                 if (rs.next()) {
                     String storedHashedPassword = rs.getString("password");
-                    String providedHashedPassword = hashPassword(password);
+
+                    boolean isAuthSuccessful = passwordAuth.authenticate(password, storedHashedPassword);
                     
                     System.out.println("Stored hash for '" + username + "': '" + storedHashedPassword + "'");
-                    System.out.println("Provided hash: '" + providedHashedPassword + "'");
+                    System.out.println("Provided hash: '" + password + "'");
                     
-                    if (storedHashedPassword.equals(providedHashedPassword)) {
+                    if (isAuthSuccessful) {
                         System.out.println("User logged in: " + username);
                         serveFile("/success.html");
                     } else {
@@ -276,7 +268,7 @@ public class Client implements Runnable {
         PrintWriter printWriter = new PrintWriter(out, true);
 
         printWriter.println("HTTP/1.1 " + statusCode + " " + statusMessage);
-        printWriter.println("Server: Java HTTP Server from Intern Labs 7.0");
+        printWriter.println("Server: Java HTTP Server");
         printWriter.println("Content-type: " + dataType);
         printWriter.println("Content-length: " + data.length);
         printWriter.println("Connection: close");

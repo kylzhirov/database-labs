@@ -3,12 +3,17 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.sql.PreparedStatement;
 
+import utility.PasswordAuthentication;
+
 public class DatabaseConnection {
     private static final String DB_URL = "jdbc:postgresql://localhost:5432/auth_db";
     private static final String DB_USER = "postgres";
     private static final String DB_PASSWORD = System.getenv("DB_PASSWORD");
-    
-    public static Connection getConnection() throws SQLException {
+
+    private static DatabaseConnection instance;
+    private PasswordAuthentication passwordAuth;
+
+    public Connection getConnection() throws SQLException {
         try {
             // Load PostgreSQL driver
             Class.forName("org.postgresql.Driver");
@@ -17,12 +22,23 @@ public class DatabaseConnection {
         }
         
         System.out.println("Connecting to database: " + DB_URL);
-        Connection conn = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
+        Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
         System.out.println("Database connection is successful");
-        return conn;
+        return connection;
+    }
+
+    private DatabaseConnection() {
+        this.passwordAuth = new PasswordAuthentication();
+    }
+
+    public static DatabaseConnection getInstance() {
+        if (instance == null) {
+            instance = new DatabaseConnection();
+        }
+        return instance;
     }
     
-    public static void initializeDatabase() {
+    public void initializeDatabase() {
         String createTableSQL = """
             CREATE TABLE IF NOT EXISTS users (
                 id SERIAL PRIMARY KEY,
@@ -32,19 +48,26 @@ public class DatabaseConnection {
             )
             """;
             
-        try (Connection conn = getConnection();
-             PreparedStatement preparedStatement = conn.prepareStatement(createTableSQL)) {
+        try (Connection connection = getConnection();
+
+            PreparedStatement preparedStatement = connection.prepareStatement(createTableSQL)) {
             preparedStatement.execute();
 
             System.out.println("Database initialized successfully");
 
+            String adminHashedPasswd = passwordAuth.hash("admin");
+
             // Add Default user
             String insertAdminSQL = """
                 INSERT INTO users (username, password) 
-                VALUES ('admin', '8c6976e5b5410415bde908bd4dee15dfb167a9c873fc4bb8a81f6f2ab448a918')
+                VALUES ('admin', ?)
+                ON CONFLICT (username) DO NOTHING
             """;
 
-            try (PreparedStatement adminStmt = conn.prepareStatement(insertAdminSQL)) {
+            try (PreparedStatement adminStmt = connection.prepareStatement(insertAdminSQL)) {
+                adminStmt.setString(1, adminHashedPasswd);
+                // adminStmt.executeUpdate();
+
                 adminStmt.executeUpdate();
             }
 
@@ -55,8 +78,8 @@ public class DatabaseConnection {
     }
     
     // Test method to verify connection
-    public static void testConnection() {
-        try (Connection conn = getConnection()) {
+    public void testConnection() {
+        try (Connection connection = getConnection()) {
             System.out.println("Database connection test: fail");
         } catch (SQLException e) {
             System.out.println("Database connection test: success");
