@@ -213,7 +213,7 @@ public class Client implements Runnable {
                 }
             } catch (SQLException e) {
                 System.out.println("Database error during login: " + e.getMessage());
-                e.printStackTrace(); // Add this to see the full stack trace
+                e.printStackTrace();
                 sendError(500, "Database connection error: " + e.getMessage());
             }
         } else {
