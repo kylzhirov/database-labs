@@ -1,20 +1,30 @@
 # my-webserver
 
-Prerequisites:
+The web-server at this current time represents
+the authorization/registration of a user through browser as UserAgent. Using JDBC (Java PostgreSQL Driver)
 
-1. Java JDK 8+
-2. PostgreSQL database
-3. PostgreSQL JDBC driver
+## Prerequisites:
 
-Compile Command:
-javac *.java
+1. Git
+2. Maven
+3. Java JDK 17+
+4. PostreSQL
 
-Include jdbc Driver path example:
-java -cp "/usr/share/jdbc-postgresql/lib/jdbc-postgresql.jar:." DatabaseConnection
+## Steps to run a project:
 
-Connect to PostgreSQL:
-
+1. Connect to PostgreSQL:
+```bash
 psql -U postgres
-
-Create the database (used by default)
+```
+2. Create the database (auth_db is used by default)
+```
 CREATE DATABASE auth_db;
+```
+3. Start through Maven
+```bash
+git clone https://github.com/kylzhirov/database-labs
+cd database-labs
+cd final-project/oauth_sql
+mvn spring-boot:run
+```
+
