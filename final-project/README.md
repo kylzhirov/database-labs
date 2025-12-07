@@ -8,7 +8,7 @@ the authorization/registration of a user through browser as UserAgent. Using JDB
 1. Git
 2. Maven
 3. Java JDK 17+
-4. PostreSQL
+4. PostgreSQL
 
 ## Steps to run a project:
 
