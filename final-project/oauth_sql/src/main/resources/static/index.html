@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>User Registration</title>
+    <title>Login Form Validation</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 40px; }
         .container { max-width: 400px; margin: 0 auto; }
@@ -17,20 +17,23 @@
         }
         input[type="submit"]:hover { background: #45a049; }
     </style>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
 </head>
 <body>
     <div class="container">
         <div class="main">
-            <h2>User Registration</h2>
-            <form method="post" action="/register">
+            <h2>Login</h2>
+            <form method="post" action="/login">
                 <label>Username:</label>
                 <input type="text" name="username" required/>
                 <label>Password:</label>
                 <input type="password" name="password" required/>
-                <input type="submit" value="Register"/>
+                <input type="submit" value="LOGIN"/>
             </form>
-            <br>
-            <p>Already have an account? <a href="/">Login here</a></p>
+            <br><br>
+            <p>Don't have an account? <a href="/register.html">Register here</a></p>
+            <p><small>Default user: admin / admin</small></p>
         </div>
     </div>
 </body>

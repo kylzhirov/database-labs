@@ -1,4 +1,4 @@
-package utility;
+package com.example.demo.util;
 
 import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;

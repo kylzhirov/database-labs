@@ -1,9 +1,11 @@
+package com.example.demo.infrastructure;
+
+import com.example.demo.util.PasswordAuthentication;
+
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.sql.SQLException;
 import java.sql.PreparedStatement;
-
-import utility.PasswordAuthentication;
+import java.sql.SQLException;
 
 public class DatabaseConnection {
     private static final String DB_URL = "jdbc:postgresql://localhost:5432/auth_db";
@@ -15,12 +17,11 @@ public class DatabaseConnection {
 
     public Connection getConnection() throws SQLException {
         try {
-            // Load PostgreSQL driver
             Class.forName("org.postgresql.Driver");
         } catch (ClassNotFoundException e) {
             throw new SQLException("PostgreSQL JDBC Driver not found", e);
         }
-        
+
         System.out.println("Connecting to database: " + DB_URL);
         Connection connection = DriverManager.getConnection(DB_URL, DB_USER, DB_PASSWORD);
         System.out.println("Database connection is successful");
@@ -37,7 +38,7 @@ public class DatabaseConnection {
         }
         return instance;
     }
-    
+
     public void initializeDatabase() {
         String createTableSQL = """
             CREATE TABLE IF NOT EXISTS users (
@@ -47,27 +48,23 @@ public class DatabaseConnection {
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
             """;
-            
-        try (Connection connection = getConnection();
 
-            PreparedStatement preparedStatement = connection.prepareStatement(createTableSQL)) {
+        try (Connection connection = getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(createTableSQL)) {
             preparedStatement.execute();
 
             System.out.println("Database initialized successfully");
 
             String adminHashedPasswd = passwordAuth.hash("admin");
 
-            // Add Default user
             String insertAdminSQL = """
-                INSERT INTO users (username, password) 
+                INSERT INTO users (username, password)
                 VALUES ('admin', ?)
                 ON CONFLICT (username) DO NOTHING
             """;
 
             try (PreparedStatement adminStmt = connection.prepareStatement(insertAdminSQL)) {
                 adminStmt.setString(1, adminHashedPasswd);
-                // adminStmt.executeUpdate();
-
                 adminStmt.executeUpdate();
             }
 
@@ -76,8 +73,7 @@ public class DatabaseConnection {
             e.printStackTrace();
         }
     }
-    
-    // Test method to verify connection
+
     public void testConnection() {
         try (Connection connection = getConnection()) {
             System.out.println("Database connection test: fail");
