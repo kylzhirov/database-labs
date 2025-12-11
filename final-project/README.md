@@ -12,6 +12,10 @@ the authorization/registration of a user through browser as UserAgent. Using JDB
 
 ## Steps to run a project:
 
+0. Set env var DB_PASSWORD:
+```bash
+export DB_PASSWORD="your_password"
+```
 1. Connect to PostgreSQL:
 ```bash
 psql -U postgres
