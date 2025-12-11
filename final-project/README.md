@@ -1,7 +1,6 @@
 # my-webserver
 
-The web-server at this current time represents
-the authorization/registration of a user through browser as UserAgent. Using JDBC (Java PostgreSQL Driver)
+The web-server provides basic REST API to osu!api v2 using JDBC as Java PostgreSQL Driver
 
 ## Prerequisites:
 
@@ -12,10 +11,17 @@ the authorization/registration of a user through browser as UserAgent. Using JDB
 
 ## Steps to run a project:
 
-0. Set env var DB_PASSWORD:
-```bash
-export DB_PASSWORD="your_password"
-```
+0. Set environment variables:
+    ####     0.1 Database password
+        ```bash
+        export DB_PASSWORD="your_password"
+        ```
+    #### 0.2 Api keys
+        PATH: database-labs/final-project/oauth_sql/src/main/resources/application.properties
+        ```bash
+            osu.client.id=your_client_id
+            osu.client.secret=your_client_secret
+        ```
 1. Connect to PostgreSQL:
 ```bash
 psql -U postgres
@@ -31,4 +37,3 @@ cd database-labs
 cd final-project/oauth_sql
 mvn spring-boot:run
 ```
-
