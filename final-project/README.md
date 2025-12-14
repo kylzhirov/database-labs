@@ -2,6 +2,9 @@
 
 The web-server provides basic REST API to osu!api v2 using JDBC as Java PostgreSQL Driver
 
+## Presentation link:
+https://docs.google.com/presentation/d/11-lgp5LCS4vznQynKOkzeYpcF3V8gwvHp5Yzwnf5AnU/edit?usp=sharing
+
 ## Prerequisites:
 
 1. Git
@@ -33,4 +36,3 @@ cd database-labs
 cd final-project/oauth_sql
 mvn spring-boot:run
 ```
-
