@@ -70,8 +70,8 @@ public class JdbcBeatmapRepository implements BeatmapRepository {
                 FROM user_plays up
                 JOIN beatmaps b ON b.beatmap_id = up.beatmap_id
                 WHERE up.osu_user_id = ?
-                ORDER BY COALESCE(up.played_at, NOW()) DESC
-                LIMIT 100
+                ORDER BY up.played_at DESC NULLS LAST
+                LIMIT 100;
                 """;
         List<Beatmap> list = new ArrayList<>();
         try (Connection conn = db.getConnection(); PreparedStatement ps = conn.prepareStatement(sql)) {
