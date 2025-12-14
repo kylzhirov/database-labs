@@ -1,5 +1,7 @@
 # my-webserver
 
+https://github.com/user-attachments/assets/bd38e010-15b4-41bb-b824-2e9843d12c0b
+
 The web-server provides basic REST API to osu!api v2 using JDBC as Java PostgreSQL Driver
 
 ## Prerequisites:
