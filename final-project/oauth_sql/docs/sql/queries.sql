@@ -69,3 +69,12 @@ public void upsert(OsuUser user) throws SQLException {
         ps.executeUpdate();
     }
 }
+
+
+-- 5. Indexes
+
+CREATE INDEX IF NOT EXISTS idx_user_plays_user ON user_plays(osu_user_id);
+CREATE INDEX IF NOT EXISTS idx_user_plays_beatmap ON user_plays(beatmap_id);
+CREATE INDEX IF NOT EXISTS idx_user_plays_played_at ON user_plays(played_at DESC);
+CREATE INDEX IF NOT EXISTS idx_user_songs_user ON user_songs(user_id);
+CREATE INDEX IF NOT EXISTS idx_user_songs_song ON user_songs(song_id);
